@@ -82,6 +82,7 @@ def evaluate_pair(models, A, B, r, multipass=False):
         if multipass:
             u, v = multipass_piv(sA, sB, mask_r=3)[2:]
             res[f"unet_mp:{name}"] = (u, v)
+            res[f"unet_mp:{name}+uod"] = uod_median(u, v)[:2]
             res[f"unet_mp:{name}+pinn"] = pinn_fit(cx, cy, *uod_median(u, v)[:2], steps=800)
     out = {}
     for k, (u, v) in res.items():

@@ -30,20 +30,23 @@ def _subpix(c, i, j):
     def fit(m, z, p):
         m, z, p = [np.log(max(v, 1e-12)) for v in (m, z, p)]
         den = 2 * (m - 2 * z + p)
-        return 0.0 if den == 0 else (m - p) / den
+        d = 0.0 if den == 0 else (m - p) / den
+        return d if np.isfinite(d) and abs(d) <= 1.0 else 0.0   # degenerate fit -> integer peak
     di = fit(c[i - 1, j], c[i, j], c[i + 1, j]) if 0 < i < w - 1 else 0.0
     dj = fit(c[i, j - 1], c[i, j], c[i, j + 1]) if 0 < j < w - 1 else 0.0
     return di, dj
 
 
-def _peak(c, mask_r=0, mask_at=(0.0, 0.0)):
+def _peak(c, mask_r=0, mask_at=(0.0, 0.0), max_r=None):
     """Highest correlation peak.  mask_r > 0 excludes a disc of radius mask_r centred at
-    displacement mask_at = (sx, sy)."""
+    displacement mask_at = (sx, sy); max_r limits the search to |s| <= max_r."""
     w = c.shape[0]
     cc = c.copy()
+    yy, xx = np.mgrid[:w, :w] - w // 2
     if mask_r > 0:
-        yy, xx = np.mgrid[:w, :w] - w // 2
         cc[(xx - mask_at[0])**2 + (yy - mask_at[1])**2 <= mask_r**2] = -np.inf
+    if max_r is not None:
+        cc[xx**2 + yy**2 > max_r**2] = -np.inf
     # avoid edges for subpixel
     cc[[0, -1], :] = -np.inf
     cc[:, [0, -1]] = -np.inf
@@ -106,7 +109,8 @@ def multipass_piv(A, B, passes=((64, 32), (32, 16), (32, 16)), mask_r=0, validat
     pass k: the predictor field p(x) from pass k-1 is interpolated to every pixel and the
     images are deformed symmetrically, A'(x) = A(x - p/2), B'(x) = B(x + p/2) (cubic spline),
     so the residual displacement d - p is measured with a smaller window.
-    Between passes the field is validated (UOD + median replacement) and lightly smoothed.
+    Between passes the field is validated (UOD + median replacement) and lightly smoothed;
+    after the first pass the residual search is limited to win/4.
 
     mask_r > 0 (separated double exposures): a particle leaking into BOTH separated frames
     produces a spurious peak at residual displacement -p (it is at 0 before deformation);
@@ -131,7 +135,11 @@ def multipass_piv(A, B, passes=((64, 32), (32, 16), (32, 16)), mask_r=0, validat
         wa = wa - wa.mean((1, 2), keepdims=True)
         wb = wb - wb.mean((1, 2), keepdims=True)
         C = _corr(wa, wb)
-        res = np.array([_peak(c, mask_r, (-a, -b))[:2] for c, a, b in zip(C, pu.ravel(), pv.ravel())])
+        # after the first pass only a residual is measured: limit it to win/4 (one-quarter rule),
+        # otherwise a bad window can run away across passes
+        max_r = None if k == 0 else win / 4
+        res = np.array([_peak(c, mask_r, (-a, -b), max_r)[:2]
+                        for c, a, b in zip(C, pu.ravel(), pv.ravel())])
         u = pu + res[:, 0].reshape(cx.shape)
         v = pv + res[:, 1].reshape(cx.shape)
         if k < len(passes) - 1:

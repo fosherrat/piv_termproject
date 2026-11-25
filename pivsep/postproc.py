@@ -122,7 +122,7 @@ def pinn_fit(cx, cy, u, v, steps=1500, lr=3e-3, delta=0.5, seed=0, eval_xy=None,
     torch.manual_seed(seed)
     c0 = np.array([cx.mean(), cy.mean()])
     sc = 0.5 * max(np.ptp(cx), np.ptp(cy))
-    U = max(np.abs(u).max(), np.abs(v).max(), 1e-6)
+    U = max(np.percentile(np.hypot(u, v), 95), 1e-6)     # robust velocity scale (outliers)
     xy = torch.tensor(np.stack([(cx.ravel() - c0[0]) / sc, (cy.ravel() - c0[1]) / sc], 1), dtype=torch.float32)
     tgt = torch.tensor(np.stack([u.ravel(), v.ravel()], 1) / U, dtype=torch.float32)
     model = StreamMLP(sigma=sigma, seed=seed)
