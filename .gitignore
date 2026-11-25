@@ -2,5 +2,3 @@
 __pycache__/
 *.pyc
 data/
-results/finetune_real_log.txt
-results/eval_real_log.txt

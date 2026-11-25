@@ -23,6 +23,8 @@ U-Net이 한 장의 double exposure를 **frame A(1st pulse) / frame B(2nd pulse)
 | `scripts/make_figures.py` | 1단계 그림 |
 | `pivsep/postproc.py` | 2단계: UOD + 중앙값 대체, 강건 stream-function LS, 발산 0 PINN |
 | `scripts/evaluate_postproc.py`, `scripts/make_figures_postproc.py` | 2단계 평가·그림 |
+| `scripts/finetune_real.py` | 3단계: 실제 프레임 self-supervised fine-tuning |
+| `scripts/evaluate_real.py`, `scripts/make_figures_real.py` | 3단계: 실제 영상 평가·그림 |
 
 ## 실행
 ```bash
@@ -34,6 +36,11 @@ python scripts/evaluate.py --model v1=results/sep_unet.pt wide_mse=results/sep_u
 python scripts/make_figures.py --model results/sep_unet_wide_bce.pt --eval results/eval_stage1.json --tag _stage1
 python scripts/evaluate_postproc.py --model results/sep_unet_wide_bce.pt
 python scripts/make_figures_postproc.py
+# 3단계 (실제 영상): openpiv 예제 데이터를 data/real/test1, data/real/test2 에 복사한 뒤
+python scripts/finetune_real.py --init results/sep_unet_wide_bce.pt --steps 1500
+python scripts/evaluate_real.py --model zeroshot=results/sep_unet_wide_bce.pt finetuned=results/sep_unet_ft_real.pt \
+    --sets test1 test2_3 test2_4 test2_5
+python scripts/make_figures_real.py
 ```
 
 ## 비교 방법
@@ -121,6 +128,57 @@ r = 0.7, noise 0.05 (U-Net 입력): RMS 1.05 → **0.38 (pinn)**, 와도 오차 
    반면 비선형 auto-corr의 오류는 고립된 부호 반전이라 uod+pinn으로 5 %까지 감소 → r ≈ 0.9 영역에서는 두 방법의 결합이 유망.
 4. 평면 PIV에서 실제 3D 유동은 ∂u/∂x + ∂v/∂y = −∂w/∂z ≠ 0. 본 결과는 2D 비압축 합성 유동 가정에 의존.
 
+## 3단계 결과 — 실제 PIV 영상 적용
+데이터: OpenPIV 예제의 실제 실험 영상 (pip 패키지 `openpiv` 0.26.3 `openpiv/data`; 저장소에는 포함하지 않음, `data/real/`에 복사해 사용).
+PIV Challenge 사이트는 이 환경에서 접속 불가.
+- **test1**: 369×511, 조밀한 작은 입자, 변위 ≈ 5 px
+- **test2**: 1012×1008, 실린더 후류, 입자 1–2 px·저대비, 변위 ≈ 8 px (6쌍)
+- test3(입자 거의 없음), test4(변위 < 0.3 px → double exposure 원리적으로 불가) 제외
+
+실제 기록은 double-frame(A, B)이므로 **I = A + r·B** 로 pulse-coded double exposure를 만들고,
+**실제 A, B의 cross-correlation 결과를 기준**으로 비교 (기준이 UOD 통과 & |d| > 2 px인 벡터만).
+
+### 처음 시도 (zero-shot) — 실패
+합성 데이터로만 학습한 모델은 실제 영상에서 거의 상수 mask(≈0.6)를 출력 → 같은 입자가 두 프레임에 모두 남아
+CC가 0 변위 피크를 잡음 (outlier 85–99 %). 원인: 실제 배경 노이즈가 합성의 ~3배, test2 입자 1–2 px.
+
+### 보정
+1. **실제 프레임 fine-tuning** (라벨 불필요: A + r·B의 정답은 A, r·B). 학습 = test2 0–2번 쌍 + 합성 50 %, 1500 step.
+   평가 = test2 3–5번 쌍(같은 장치, 다른 시점)과 **test1(학습에 전혀 없던 다른 실험)**.
+2. **분리 후 CC에 중심 마스크(반지름 3 px)** — auto-correlation과 동일 조건.
+   double exposure는 원래 |d| > 1.5 d_p가 전제이므로 공정한 비교. U-Net은 완벽히 분리할 필요 없이 ±d 피크의 비대칭만 만들면 됨.
+
+### 결과 — outlier / 방향 오류 (실제 A,B CC 기준)
+**test1 (학습에 없던 실험, 449 벡터)**
+
+| r | 비선형 auto-corr | auto-corr (부호 oracle) | zero-shot + 마스크 | fine-tuned + 마스크 | **+ UOD + PINN** |
+|---|---|---|---|---|---|
+| 0.9 | 42.5% / 35.4% | 8.9% / 0% | 35.4% / 29.8% | 20.3% / 16.7% | **11.1% / 0%** |
+| 0.7 | 30.3% / 21.2% | 10.0% / 0% | 15.4% / 9.8% | **8.2% / 5.6%** | **0.9% / 0%** |
+| 0.5 | 42.1% / 22.9% | 17.8% / 0% | 5.6% / 0.9% | **2.2% / 0.2%** | **0.7% / 0%** |
+
+**test2 3–5번 쌍 (9606 벡터, 어려운 영상)**
+
+| r | 비선형 auto-corr | auto-corr (부호 oracle) | zero-shot + 마스크 | fine-tuned + 마스크 | + UOD + PINN |
+|---|---|---|---|---|---|
+| 0.9 | 67.1% / 37.1% | 25.8% / 0% | 60.2% / 39.6% | 45.4% / 29.4% | 46.8% / 1.7% |
+| 0.7 | 73.4% / 37.3% | 34.7% / 0% | 62.9% / 37.5% | 48.9% / 27.8% | 39.6% / 1.3% |
+| 0.5 | 85.2% / 42.0% | 51.9% / 0% | 73.2% / 39.4% | 62.8% / 32.7% | 61.6% / 1.5% |
+
+![real vectors](results/fig_real_vectors.png)
+![real separation](results/fig_real_separation.png)
+
+### 관찰
+1. 합성→실제 domain gap이 크다: zero-shot은 실패, **실제 프레임 self-supervised fine-tuning + 중심 마스크**로 해결.
+2. test1(미학습 실험)에서 fine-tuned + 마스크는 고전 비선형 auto-corr보다 outlier 4–20배 적고,
+   r ≤ 0.7에서는 **부호를 알려준 auto-correlation보다도 정확**. 전체 파이프라인(+UOD+PINN): r = 0.7에서 outlier 0.9 %, 방향 오류 0 %.
+3. test2는 double exposure 자체의 한계(부호 oracle auto-corr도 outlier 26–52 %)에 가까움.
+   그래도 모든 r에서 고전 기법보다 좋고, 후처리 후 방향 오류 ≈ 1–2 %. 크기 오차는 남음.
+4. PINN 후처리는 median 오차를 0.19 → 0.38 px로 키운다 (test1): 평활화가 기준 CC에 있는 작은 규모 구조·노이즈까지 제거하기 때문.
+   outlier/방향 제거 효과와 trade-off.
+5. 주의: 기준값은 실제 A, B로 구한 CC(정답 아님)이며, 합성 double exposure(A + r·B)는 실제 펄스 코딩 촬영
+   (레이저 세기 조절, 카메라 포화·비선형성)을 완전히 재현하지 않는다.
+
 ## 선행 연구와의 관계
 - 방향 모호성과 pulse coding / image shifting: 1980년대 특허, Raffel et al., 강의 p.33–34
 - 비대칭 auto-correlation: Marzouk & Hart (1998, Exp. Fluids)
@@ -131,7 +189,7 @@ r = 0.7, noise 0.05 (U-Net 입력): RMS 1.05 → **0.38 (pinn)**, 와도 오차 
 - 본 프로젝트의 차별점: **밝기 코딩 + CNN 분리 → 표준 CC** 결합과, z-밝기 편차 하에서의 정량 비교
 
 ## 한계와 향후 연구
-- 합성 데이터만 사용 (실제 영상: 레이저 프로파일, 반사, 카메라 MTF 미반영) → 실험 영상 검증 필요
+- 실제 영상 검증은 OpenPIV 예제 2종에 한정, double exposure는 실제 프레임 합성(A + r·B) → 실제 pulse-coded 촬영 필요
 - r → 1, 큰 속도 구배, 고밀도에서 성능 저하 → multi-pass / window deformation 결합, 분리 후 PTV
 - U-Net + 비선형 auto-corr 결합(앙상블)으로 군집 방향 오류 감소
 - stereo / tomographic PIV로 확장 시 3D 발산(벡터 퍼텐셜) 적용

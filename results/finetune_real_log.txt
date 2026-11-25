@@ -1,0 +1,17 @@
+synthetic 3000, real train pairs ['test2_0', 'test2_1', 'test2_2']
+step   100  train 5.963e-01  held-out real recon 6.661e-03  65s
+step   200  train 5.748e-01  held-out real recon 6.607e-03  128s
+step   300  train 5.936e-01  held-out real recon 6.577e-03  193s
+step   400  train 5.731e-01  held-out real recon 6.599e-03  258s
+step   500  train 6.028e-01  held-out real recon 6.588e-03  323s
+step   600  train 5.846e-01  held-out real recon 6.581e-03  388s
+step   700  train 6.100e-01  held-out real recon 6.582e-03  453s
+step   800  train 6.163e-01  held-out real recon 6.554e-03  518s
+step   900  train 5.853e-01  held-out real recon 6.534e-03  583s
+step  1000  train 5.790e-01  held-out real recon 6.575e-03  648s
+step  1100  train 6.039e-01  held-out real recon 6.544e-03  713s
+step  1200  train 5.886e-01  held-out real recon 6.548e-03  779s
+step  1300  train 5.903e-01  held-out real recon 6.536e-03  844s
+step  1400  train 5.811e-01  held-out real recon 6.551e-03  920s
+step  1500  train 5.800e-01  held-out real recon 6.557e-03  987s
+saved results/sep_unet_ft_real.pt
