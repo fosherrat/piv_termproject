@@ -13,11 +13,14 @@ from pivsep.synth import SynthParams, make_sample
 from pivsep.separation import SepUNet, normalize
 
 
+RANGE = dict(ppp_max=0.05, noise_max=0.03)
+
+
 def random_params(rng, size):
     return SynthParams(size=size,
                        r=rng.uniform(0.45, 0.95),
-                       ppp=rng.uniform(0.015, 0.05),
-                       noise=rng.uniform(0.005, 0.03),
+                       ppp=rng.uniform(0.015, RANGE["ppp_max"]),
+                       noise=rng.uniform(0.005, RANGE["noise_max"]),
                        dp_mean=rng.uniform(2.2, 3.5),
                        w_max=rng.uniform(0.0, 0.15))
 
@@ -57,9 +60,16 @@ def main():
     ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--base", type=int, default=24)
     ap.add_argument("--loss", choices=["mse", "bce"], default="mse")
+    ap.add_argument("--ppp-max", type=float, default=0.05)
+    ap.add_argument("--noise-max", type=float, default=0.03)
+    ap.add_argument("--threads", type=int, default=0)
     ap.add_argument("--out", default="results/sep_unet.pt")
     a = ap.parse_args()
     torch.manual_seed(0)
+    if a.threads:
+        torch.set_num_threads(a.threads)
+    RANGE.update(ppp_max=a.ppp_max, noise_max=a.noise_max)
+    print(vars(a), flush=True)
 
     t0 = time.time()
     Xtr, Ytr = build(a.n_train, a.size, 1)
@@ -91,7 +101,7 @@ def main():
             print(f"step {step:5d}  train {loss.item():.3e}  val {vl:.3e}  "
                   f"{time.time() - t0:.0f}s", flush=True)
     os.makedirs(os.path.dirname(a.out), exist_ok=True)
-    torch.save({"state": model.state_dict(), "base": a.base}, a.out)
+    torch.save({"state": model.state_dict(), "base": a.base, "args": vars(a)}, a.out)
     print("saved", a.out)
 
 

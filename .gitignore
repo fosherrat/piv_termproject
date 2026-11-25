@@ -2,3 +2,4 @@
 __pycache__/
 *.pyc
 data/
+results/train_log_wide_*.txt
