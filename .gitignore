@@ -2,4 +2,3 @@
 __pycache__/
 *.pyc
 data/
-results/eval_postproc_log.txt
