@@ -4,9 +4,10 @@ import numpy as np
 from scipy import ndimage
 
 
-def window_grid(size, win=32, step=16):
-    starts = np.arange(0, size - win + 1, step)
-    sy, sx = np.meshgrid(starts, starts, indexing="ij")
+def window_grid(shape, win=32, step=16):
+    """Window grid for an image of shape (H, W) (an int means a square H = W image)."""
+    H, W = (shape, shape) if np.isscalar(shape) else shape[:2]
+    sy, sx = np.meshgrid(np.arange(0, H - win + 1, step), np.arange(0, W - win + 1, step), indexing="ij")
     cx = sx + (win - 1) / 2
     cy = sy + (win - 1) / 2
     return sy, sx, cx, cy
@@ -61,7 +62,7 @@ def cross_piv(A, B, win=32, step=16, mask_r=0):
     mask_r > 0 excludes the zero-displacement region (used for frames separated from a
     double exposure: residual leakage of the same particle into both frames makes a
     spurious peak at s = 0, and double exposures require |d| > ~1.5 d_p anyway)."""
-    sy, sx, cx, cy = window_grid(A.shape[0], win, step)
+    sy, sx, cx, cy = window_grid(A.shape, win, step)
     wa = _windows(A, sy, sx, win); wb = _windows(B, sy, sx, win)
     wa = wa - wa.mean((1, 2), keepdims=True)
     wb = wb - wb.mean((1, 2), keepdims=True)
@@ -73,7 +74,7 @@ def cross_piv(A, B, win=32, step=16, mask_r=0):
 def auto_piv(I, win=32, step=16, mask_r=3):
     """Auto-correlation of a double exposure.  Returns one of the two symmetric
     peaks (+d or -d): direction is inherently ambiguous."""
-    sy, sx, cx, cy = window_grid(I.shape[0], win, step)
+    sy, sx, cx, cy = window_grid(I.shape, win, step)
     w = _windows(I, sy, sx, win)
     w = w - w.mean((1, 2), keepdims=True)
     C = _corr(w, w)
@@ -85,7 +86,7 @@ def asym_auto_piv(I, win=32, step=16, mask_r=3, power=2):
     """Nonlinear auto-correlation c(s) = sum I^p(x) I(x+s).
     With pulse coding (pulse 1 brighter, ratio r<1) the +d peak ~ r*I0^3 and the
     -d peak ~ r^2*I0^3 (p=2), so the larger peak gives the flow direction."""
-    sy, sx, cx, cy = window_grid(I.shape[0], win, step)
+    sy, sx, cx, cy = window_grid(I.shape, win, step)
     w = _windows(I, sy, sx, win)
     w = np.clip(w - np.median(w, axis=(1, 2), keepdims=True), 0, None)
     C = _corr(w**power, w)
@@ -122,7 +123,7 @@ def multipass_piv(A, B, passes=((64, 32), (32, 16), (32, 16)), mask_r=0, validat
     Y, X = np.mgrid[:H, :W].astype(float)
     prev = None
     for k, (win, step) in enumerate(passes):
-        sy, sx, cx, cy = window_grid(H, win, step)
+        sy, sx, cx, cy = window_grid((H, W), win, step)
         if prev is None:
             pu = np.zeros(cx.shape); pv = np.zeros(cx.shape); Ad, Bd = A, B
         else:

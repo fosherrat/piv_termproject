@@ -27,6 +27,7 @@ U-Net이 한 장의 double exposure를 **frame A(1st pulse) / frame B(2nd pulse)
 | `scripts/evaluate_real.py`, `scripts/make_figures_real.py` | 3단계: 실제 영상 평가·그림 |
 | `pivsep/correlation.py: multipass_piv` | 4단계: multi-pass + 대칭 window deformation |
 | `scripts/make_figures_mp.py` | 4단계 그림 (`evaluate.py --multipass`, `evaluate_real.py --multipass` 결과) |
+| `scripts/evaluate_pivc.py`, `scripts/make_figures_pivc.py` | 5단계: PIV Challenge 2001 case C 외부 검증 |
 
 ## 실행
 ```bash
@@ -43,6 +44,8 @@ python scripts/finetune_real.py --init results/sep_unet_wide_bce.pt --steps 1500
 python scripts/evaluate_real.py --model zeroshot=results/sep_unet_wide_bce.pt finetuned=results/sep_unet_ft_real.pt \
     --sets test1 test2_3 test2_4 test2_5
 python scripts/make_figures_real.py
+# 5단계: PIV Challenge 2001 case C zip을 data/pivchallenge_C/ 에 압축 해제한 뒤
+python scripts/evaluate_pivc.py && python scripts/make_figures_pivc.py
 ```
 
 ## 비교 방법
@@ -225,6 +228,60 @@ CC가 0 변위 피크를 잡음 (outlier 85–99 %). 원인: 실제 배경 노�
    이런 입력에는 UOD가 적합. (2단계 결론 — "outlier 많으면 UOD 먼저" — 과 일치)
 6. 2단계(합성 후처리) 결과는 single-pass 입력 기준이며 재계산하지 않았다.
 
+## 5단계 — 외부 검증: PIV Challenge 2001 case C (강한 벽 반사)
+데이터: PIV Challenge 2001 case C (Stanislas; 원심 임펠러, YAG 300 mJ, PEG smoke ≈1 µm, 1000×512 px, Kodak ES1.0).
+블레이드 trailing edge의 **강한 반사·flare**, 대각선 그림자, 디퓨저 벽(두 원호)이 있는 실제 영상. 배경 영상 2장(Cbg_1/2)과 마스크(Cmask_1) 제공.
+저장소에는 포함하지 않음 → `data/pivchallenge_C/`에 압축 해제 후 사용. **학습·fine-tuning에 case C는 전혀 쓰지 않음** (기존 모델 그대로, 순수 cross-domain 시험).
+
+- 기준값: 실제 A, B(배경 영상 차감)의 multi-pass CC (64→32→32, 격자 32/16 = challenge 기준 해석과 동일 간격)
+  - 평균 변위 (U, V) = (−8.51, −4.63) px, u′ = 2.26, v′ = 1.85 px, |d| 중앙값 10.8 px
+- 평가 벡터: 중심이 마스크 밖(case C 규칙) & 기준이 UOD 통과 & |d| > 2 px → 1559 / 1728
+- 두 가지 double exposure: **bgsub**(배경 영상 차감 후 I = A + r·B), **raw**(배경 영상 없이 → 반사가 두 번 더해진 채로 남음)
+- 코드 수정: `window_grid`가 정사각형 영상만 가정(`shape[0]`)하던 문제 수정 → 직사각형 영상 전체 격자 사용
+  (이전 test1(368×496) 결과는 왼쪽 368×368 영역만 평가한 것임; 재계산하지 않음)
+
+### 결과 — outlier / 방향 오류 (실제 A,B multi-pass CC 기준, n = 1559)
+**bgsub (배경 영상 차감)**
+
+| r | 비선형 auto-corr | auto-corr (부호 oracle) | zero-shot multi | fine-tuned single | **fine-tuned multi** | **+ UOD** |
+|---|---|---|---|---|---|---|
+| 0.9 | 61.8% / 37.3% | 28.2% / 0% | 75.0% / 53.6% | 60.9% / 43.5% | 35.2% / 16.9% | **31.9% / 16.0%** |
+| 0.7 | 60.6% / 31.0% | 30.4% / 0% | 22.5% / 5.8% | 48.0% / 30.4% | 12.5% / 2.1% | **11.0% / 2.1%** |
+| 0.5 | 73.1% / 35.7% | 40.0% / 0% | 24.1% / 5.4% | 47.0% / 25.4% | 13.3% / 2.9% | **10.8% / 2.6%** |
+
+**raw (반사 유지)**
+
+| r | 비선형 auto-corr | auto-corr (부호 oracle) | zero-shot multi | fine-tuned single | **fine-tuned multi** | **+ UOD** |
+|---|---|---|---|---|---|---|
+| 0.9 | 64.8% / 38.7% | 30.0% / 0% | 62.0% / 34.3% | 61.7% / 42.5% | 39.1% / 20.6% | **35.8% / 20.7%** |
+| 0.7 | 62.2% / 33.8% | 32.6% / 0% | 25.4% / 4.7% | 49.5% / 30.0% | 17.7% / 3.2% | **15.3% / 3.0%** |
+| 0.5 | 74.3% / 36.4% | 41.5% / 0% | 27.7% / 6.1% | 53.0% / 28.3% | 20.7% / 4.4% | **17.4% / 4.0%** |
+
+median 오차 (fine-tuned multi, r 0.7): bgsub 0.18 px, raw 0.19 px.
+처리 시간: 분리 + multi-pass ≈ 0.7 ms/vector (CPU 4코어).
+
+반사 세기별 outlier (r 0.7, 창 안 Cbg_1 평균 밝기 0–40 / 40–80 / 80–255, n = 1084 / 291 / 183)
+
+| | 0–40 | 40–80 | 80–255 (강한 반사) |
+|---|---|---|---|
+| auto-corr (부호 oracle), bgsub | 25.1% | 26.5% | 67.8% |
+| fine-tuned multi + UOD, bgsub | **4.6%** | **10.7%** | **48.6%** |
+| fine-tuned multi + UOD, raw | 8.6% | 15.1% | 54.6% |
+
+![pivc bars](results/fig_pivc_bars.png)
+![pivc vectors](results/fig_pivc_vectors.png)
+
+### 관찰
+1. **학습에 없던 실험·장치(임펠러, 1 µm smoke, 매우 높은 밀도)에서도 4단계 결론이 유지된다**: r ≤ 0.7에서 분리 → multi-pass CC가
+   부호 oracle auto-correlation보다 outlier 2–4배 적고(11 % vs 30–40 %), 방향 오류 2–3 %. 고전 비선형 auto-corr은 60 % 이상 실패.
+2. 변위가 커서(≈ 11 px, 32 px 창의 1/3) **single-pass는 모든 방법이 실패** (¼ 규칙 위반, 입자 쌍 손실) → 64 px 첫 pass가 필수.
+3. 실제 프레임 fine-tuning(test2 실린더 후류)이 다른 실험에도 일반화: zero-shot 대비 outlier 22.5 → 12.5 % (r 0.7).
+4. 남은 outlier는 **강한 반사 영역**(trailing edge flare, 위쪽 중앙)과 블레이드·그림자 경계에 집중.
+   이 영역은 기준값(실제 A,B CC) 자체도 불안정하므로 일부는 기준 오차. 배경 영상이 없으면(raw) outlier가 +4–7 %p 증가 — 반사 제거 전처리가 중요.
+5. r = 0.9는 여전히 어렵다 (32 %, 방향 오류 16 %).
+6. 주의: double exposure는 실제 프레임 합성(A + r·B)이며, 실제 펄스 코딩 촬영에서는 두 번째 노출 시간(32 ms)의 배경광·포화가 다르게 나타난다.
+   challenge 참가팀 결과와의 직접 비교는 하지 않았다 (본 프로젝트의 문제 설정이 다름).
+
 ## 선행 연구와의 관계
 - 방향 모호성과 pulse coding / image shifting: 1980년대 특허, Raffel et al., 강의 p.33–34
 - 비대칭 auto-correlation: Marzouk & Hart (1998, Exp. Fluids)
@@ -235,7 +292,7 @@ CC가 0 변위 피크를 잡음 (outlier 85–99 %). 원인: 실제 배경 노�
 - 본 프로젝트의 차별점: **밝기 코딩 + CNN 분리 → 표준 CC** 결합과, z-밝기 편차 하에서의 정량 비교
 
 ## 한계와 향후 연구
-- 실제 영상 검증은 OpenPIV 예제 2종에 한정, double exposure는 실제 프레임 합성(A + r·B) → 실제 pulse-coded 촬영 필요
+- 실제 영상 검증은 OpenPIV 예제 2종 + PIV Challenge case C에 한정, double exposure는 실제 프레임 합성(A + r·B) → 실제 pulse-coded 촬영 필요
 - r → 1에서 여전히 성능 저하, multi-pass 후에도 큰 구배(> 4 px)에서 21 % outlier → 분리 후 PTV, 더 작은 최종 창
 - 불확도 정량화(UQ) 미구현
 - U-Net + 비선형 auto-corr 결합(앙상블)으로 군집 방향 오류 감소
