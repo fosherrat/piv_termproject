@@ -1,0 +1,32 @@
+data built in 46s
+step   100  train 3.631e-03  val 4.052e-03  79s
+step   200  train 3.289e-03  val 3.953e-03  162s
+step   300  train 2.764e-03  val 3.822e-03  238s
+step   400  train 2.929e-03  val 3.699e-03  311s
+step   500  train 3.161e-03  val 3.764e-03  382s
+step   600  train 2.970e-03  val 3.928e-03  452s
+step   700  train 3.861e-03  val 3.600e-03  521s
+step   800  train 3.545e-03  val 3.668e-03  589s
+step   900  train 2.690e-03  val 3.821e-03  655s
+step  1000  train 4.233e-03  val 3.667e-03  723s
+step  1100  train 2.881e-03  val 3.581e-03  794s
+step  1200  train 3.140e-03  val 3.370e-03  863s
+step  1300  train 3.992e-03  val 3.265e-03  930s
+step  1400  train 2.047e-03  val 3.510e-03  997s
+step  1500  train 2.926e-03  val 3.064e-03  1063s
+step  1600  train 2.827e-03  val 2.826e-03  1130s
+step  1700  train 2.681e-03  val 2.889e-03  1201s
+step  1800  train 2.412e-03  val 2.560e-03  1271s
+step  1900  train 2.368e-03  val 2.455e-03  1340s
+step  2000  train 3.298e-03  val 2.401e-03  1409s
+step  2100  train 3.378e-03  val 2.356e-03  1477s
+step  2200  train 1.832e-03  val 2.261e-03  1544s
+step  2300  train 1.703e-03  val 2.229e-03  1611s
+step  2400  train 2.125e-03  val 2.195e-03  1678s
+step  2500  train 2.342e-03  val 2.148e-03  1744s
+step  2600  train 2.004e-03  val 2.104e-03  1810s
+step  2700  train 2.033e-03  val 2.126e-03  1876s
+step  2800  train 2.224e-03  val 2.086e-03  1944s
+step  2900  train 1.507e-03  val 2.077e-03  2010s
+step  3000  train 2.481e-03  val 2.081e-03  2078s
+saved results/sep_unet.pt
