@@ -69,10 +69,13 @@ def evaluate_pair(models, A, B, r):
     res["auto_or"] = (np.where(pick, -ua, ua), np.where(pick, -va, va))
     res["asym"] = asym_auto_piv(I, WIN, STEP)[2:]
     res["thr_cc"] = cross_piv(*threshold_split(I), WIN, STEP)[2:]
+    res["thr_ccm"] = cross_piv(*threshold_split(I), WIN, STEP, mask_r=3)[2:]
     for name, m in models.items():
-        u, v = cross_piv(*unet_split(m, I), WIN, STEP)[2:]
-        res[f"unet_cc:{name}"] = (u, v)
-        res[f"unet_cc:{name}+pinn"] = pinn_fit(cx, cy, u, v, steps=800)
+        sA, sB = unet_split(m, I)
+        res[f"unet_cc:{name}"] = cross_piv(sA, sB, WIN, STEP)[2:]
+        u, v = cross_piv(sA, sB, WIN, STEP, mask_r=3)[2:]        # same centre mask as auto-corr
+        res[f"unet_ccm:{name}"] = (u, v)
+        res[f"unet_ccm:{name}+pinn"] = pinn_fit(cx, cy, *uod_median(u, v)[:2], steps=800)
     out = {}
     for k, (u, v) in res.items():
         e = np.hypot(u - ru, v - rv)[valid]

@@ -50,14 +50,17 @@ def _peak(c, mask_r=0):
     return (j + dj - w // 2), (i + di - w // 2), cc[i, j]
 
 
-def cross_piv(A, B, win=32, step=16):
-    """Standard single-pass cross-correlation between frames A and B."""
+def cross_piv(A, B, win=32, step=16, mask_r=0):
+    """Standard single-pass cross-correlation between frames A and B.
+    mask_r > 0 excludes the zero-displacement region (used for frames separated from a
+    double exposure: residual leakage of the same particle into both frames makes a
+    spurious peak at s = 0, and double exposures require |d| > ~1.5 d_p anyway)."""
     sy, sx, cx, cy = window_grid(A.shape[0], win, step)
     wa = _windows(A, sy, sx, win); wb = _windows(B, sy, sx, win)
     wa = wa - wa.mean((1, 2), keepdims=True)
     wb = wb - wb.mean((1, 2), keepdims=True)
     C = _corr(wa, wb)
-    out = np.array([_peak(c)[:2] for c in C])
+    out = np.array([_peak(c, mask_r)[:2] for c in C])
     return cx, cy, out[:, 0].reshape(cx.shape), out[:, 1].reshape(cx.shape)
 
 
