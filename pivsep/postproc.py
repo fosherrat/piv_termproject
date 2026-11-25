@@ -159,3 +159,38 @@ def pinn_fit(cx, cy, u, v, steps=1500, lr=3e-3, delta=0.5, seed=0, eval_xy=None,
     if eval_xy is not None:
         res = res + predict(*eval_xy)
     return res
+
+
+def uod_flags(u, v, valid=None, k=2, thr=2.0, eps=0.1):
+    """Universal outlier detection on a (2k+1)^2 neighbourhood, ignoring vectors already
+    invalid (valid == False).  Returns a boolean array: True = outlier."""
+    H, W = u.shape
+    if valid is None:
+        valid = np.ones_like(u, bool)
+    bad = np.zeros_like(u, bool)
+    offs = [(i, j) for i in range(-k, k + 1) for j in range(-k, k + 1) if (i, j) != (0, 0)]
+    import warnings
+    for f in (u, v):
+        P = np.pad(np.where(valid, f, np.nan), k, mode="constant", constant_values=np.nan)
+        nb = np.stack([P[k + i:k + i + H, k + j:k + j + W] for i, j in offs])
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            med = np.nanmedian(nb, 0)
+            res = np.nanmedian(np.abs(nb - med), 0)
+        r = np.abs(f - med) / (res + eps)
+        bad |= np.nan_to_num(r, nan=np.inf) > thr
+    return bad & valid
+
+
+def fill_nan(u, v, valid, n_iter=200):
+    """Replace invalid vectors by iterative neighbour averaging (for full-coverage output)."""
+    from scipy import ndimage as nd
+    out = []
+    for f in (u, v):
+        g = np.where(valid, f, 0.0); w = valid.astype(float)
+        for _ in range(n_iter):
+            num = nd.uniform_filter(g * w, 3); den = nd.uniform_filter(w, 3)
+            new = np.where(den > 0, num / np.maximum(den, 1e-12), 0.0)
+            g = np.where(valid, f, new); w = np.where(valid, 1.0, (den > 0).astype(float))
+        out.append(g)
+    return out[0], out[1]

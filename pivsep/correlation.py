@@ -150,3 +150,48 @@ def multipass_piv(A, B, passes=((64, 32), (32, 16), (32, 16)), mask_r=0, validat
                 v = ndimage.gaussian_filter(v, smooth, mode="nearest")
         prev = (cx, cy, u, v)
     return cx, cy, u, v
+
+
+# ----------------------------------------------------------------- vector quality / validation
+def window_quality(A, B, u, v, win=32, step=16, r=1.5, mask_r=3):
+    """Per-vector quality from the (undeformed) cross-correlation of two separated frames,
+    evaluated at the measured displacement d = (u, v):
+      dir_ratio = R(+d) / R(-d)  - how clearly the frames are ordered (~1: direction ambiguous;
+                                   specific to frames separated from a double exposure)
+      ppr       = R(+d) / max R elsewhere (outside +-d and the centre mask) - primary-to-secondary
+                  peak ratio, the standard PIV confidence measure
+    R is baseline-shifted (R - median R) so the ratios are positive."""
+    sy, sx, cx, cy = window_grid(A.shape[0], win, step)
+    wa = _windows(A, sy, sx, win); wb = _windows(B, sy, sx, win)
+    wa = wa - wa.mean((1, 2), keepdims=True)
+    wb = wb - wb.mean((1, 2), keepdims=True)
+    C = _corr(wa, wb)
+    yy, xx = np.mgrid[:win, :win] - win // 2
+    dr = np.zeros(cx.size); pr = np.zeros(cx.size)
+    for k, (c, du, dv) in enumerate(zip(C, u.ravel(), v.ravel())):
+        c = c - np.median(c)
+        near_p = (xx - du) ** 2 + (yy - dv) ** 2 <= r ** 2
+        near_m = (xx + du) ** 2 + (yy + dv) ** 2 <= r ** 2
+        if not near_p.any() or not near_m.any():
+            continue
+        cp = max(c[near_p].max(), 1e-9); cm = max(c[near_m].max(), 1e-9)
+        rest = ~((xx - du) ** 2 + (yy - dv) ** 2 <= 9) & ~((xx + du) ** 2 + (yy + dv) ** 2 <= 9) \
+            & ~(xx ** 2 + yy ** 2 <= mask_r ** 2)
+        co = max(c[rest].max(), 1e-9)
+        dr[k] = cp / cm; pr[k] = cp / co
+    return dr.reshape(cx.shape), pr.reshape(cx.shape)
+
+
+def content_mask(I, win=32, step=16, sat=0.98, sat_frac=0.02, rel_signal=0.5):
+    """Windows to exclude before any correlation (standard PIV masking, decided from the
+    recorded image only): saturated objects (glare from the model, walls) and windows with
+    too little particle signal (shadows, outside the light sheet).
+    Signal = std of the high-passed image in the window, relative to the image median."""
+    from scipy import ndimage as nd
+    hp = I - nd.uniform_filter(I, 7)
+    sy, sx, cx, cy = window_grid(I.shape[0], win, step)
+    w = _windows(I, sy, sx, win); wh = _windows(hp, sy, sx, win)
+    satf = (w >= sat).mean((1, 2))
+    sig = wh.std((1, 2))
+    keep = (satf <= sat_frac) & (sig >= rel_signal * np.median(sig))
+    return keep.reshape(cx.shape)

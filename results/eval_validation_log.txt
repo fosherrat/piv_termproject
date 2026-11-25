@@ -1,0 +1,62 @@
+selected on ['test2_0', 'test2_1', 'test2_2'] (r=0.7): rel_signal=0.6, ppr>=0.0, uod5=True  -> train coverage 0.72, outlier 0.048
+
+test2 r=0.9
+   asym raw                             coverage 100.0%  outlier  68.7%  sign  37.4%  med 9.792
+   asym + mask + UOD5                   coverage  48.0%  outlier  47.1%  sign  21.6%  med 0.680
+   auto (oracle sign) + mask + UOD5     coverage  62.0%  outlier   8.0%  sign   0.0%  med 0.237
+   unet mp raw                          coverage 100.0%  outlier  29.4%  sign  18.1%  med 0.271
+   unet mp + mask                       coverage  80.5%  outlier  17.0%  sign   7.2%  med 0.213
+   unet mp + mask + ppr                 coverage  80.5%  outlier  17.0%  sign   7.2%  med 0.213
+   unet mp + mask + ppr + UOD5          coverage  73.6%  outlier  11.1%  sign   5.9%  med 0.196
+   unet mp + validation + fill          coverage 100.0%  outlier  23.4%  sign   9.9%  med 0.256
+
+test1 r=0.9
+   asym raw                             coverage 100.0%  outlier  42.9%  sign  35.8%  med 0.548
+   asym + mask + UOD5                   coverage  61.4%  outlier  14.7%  sign  11.9%  med 0.287
+   auto (oracle sign) + mask + UOD5     coverage  83.3%  outlier   0.0%  sign   0.0%  med 0.217
+   unet mp raw                          coverage 100.0%  outlier  11.2%  sign   5.8%  med 0.225
+   unet mp + mask                       coverage  99.8%  outlier  11.2%  sign   5.8%  med 0.225
+   unet mp + mask + ppr                 coverage  99.8%  outlier  11.2%  sign   5.8%  med 0.225
+   unet mp + mask + ppr + UOD5          coverage  90.6%  outlier   5.9%  sign   3.6%  med 0.212
+   unet mp + validation + fill          coverage 100.0%  outlier   9.0%  sign   4.1%  med 0.226
+
+test2 r=0.7
+   asym raw                             coverage 100.0%  outlier  74.8%  sign  37.7%  med 10.502
+   asym + mask + UOD5                   coverage  48.9%  outlier  61.3%  sign  24.7%  med 5.458
+   auto (oracle sign) + mask + UOD5     coverage  55.7%  outlier  12.2%  sign   0.0%  med 0.262
+   unet mp raw                          coverage 100.0%  outlier  23.3%  sign   9.0%  med 0.261
+   unet mp + mask                       coverage  79.1%  outlier  14.7%  sign   3.4%  med 0.221
+   unet mp + mask + ppr                 coverage  79.1%  outlier  14.7%  sign   3.4%  med 0.221
+   unet mp + mask + ppr + UOD5          coverage  70.9%  outlier   7.2%  sign   2.1%  med 0.200
+   unet mp + validation + fill          coverage 100.0%  outlier  18.3%  sign   4.3%  med 0.257
+
+test1 r=0.7
+   asym raw                             coverage 100.0%  outlier  29.6%  sign  20.8%  med 0.338
+   asym + mask + UOD5                   coverage  67.4%  outlier   1.6%  sign   0.3%  med 0.250
+   auto (oracle sign) + mask + UOD5     coverage  83.3%  outlier   0.3%  sign   0.0%  med 0.215
+   unet mp raw                          coverage 100.0%  outlier   0.9%  sign   0.2%  med 0.203
+   unet mp + mask                       coverage  99.6%  outlier   0.9%  sign   0.2%  med 0.202
+   unet mp + mask + ppr                 coverage  99.6%  outlier   0.9%  sign   0.2%  med 0.202
+   unet mp + mask + ppr + UOD5          coverage  94.4%  outlier   0.0%  sign   0.0%  med 0.199
+   unet mp + validation + fill          coverage 100.0%  outlier   0.0%  sign   0.0%  med 0.207
+
+test2 r=0.5
+   asym raw                             coverage 100.0%  outlier  86.0%  sign  42.1%  med 11.922
+   asym + mask + UOD5                   coverage  52.0%  outlier  83.2%  sign  35.8%  med 9.913
+   auto (oracle sign) + mask + UOD5     coverage  47.8%  outlier  28.1%  sign   0.0%  med 0.369
+   unet mp raw                          coverage 100.0%  outlier  29.2%  sign   5.5%  med 0.329
+   unet mp + mask                       coverage  77.8%  outlier  22.8%  sign   3.0%  med 0.285
+   unet mp + mask + ppr                 coverage  77.8%  outlier  22.8%  sign   3.0%  med 0.285
+   unet mp + mask + ppr + UOD5          coverage  64.6%  outlier   9.1%  sign   1.6%  med 0.237
+   unet mp + validation + fill          coverage 100.0%  outlier  17.8%  sign   1.8%  med 0.303
+
+test1 r=0.5
+   asym raw                             coverage 100.0%  outlier  42.3%  sign  23.0%  med 0.540
+   asym + mask + UOD5                   coverage  60.9%  outlier   8.8%  sign   2.8%  med 0.292
+   auto (oracle sign) + mask + UOD5     coverage  79.8%  outlier   1.9%  sign   0.0%  med 0.249
+   unet mp raw                          coverage 100.0%  outlier   0.0%  sign   0.0%  med 0.191
+   unet mp + mask                       coverage  99.6%  outlier   0.0%  sign   0.0%  med 0.191
+   unet mp + mask + ppr                 coverage  99.6%  outlier   0.0%  sign   0.0%  med 0.191
+   unet mp + mask + ppr + UOD5          coverage  94.0%  outlier   0.0%  sign   0.0%  med 0.185
+   unet mp + validation + fill          coverage 100.0%  outlier   0.0%  sign   0.0%  med 0.194
+saved results/eval_validation.json

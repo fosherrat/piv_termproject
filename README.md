@@ -27,6 +27,7 @@ U-Net이 한 장의 double exposure를 **frame A(1st pulse) / frame B(2nd pulse)
 | `scripts/evaluate_real.py`, `scripts/make_figures_real.py` | 3단계: 실제 영상 평가·그림 |
 | `pivsep/correlation.py: multipass_piv` | 4단계: multi-pass + 대칭 window deformation |
 | `scripts/make_figures_mp.py` | 4단계 그림 (`evaluate.py --multipass`, `evaluate_real.py --multipass` 결과) |
+| `scripts/evaluate_validation.py`, `scripts/make_figures_validation.py` | 5단계: 자동 마스크 + 검증 (임계값은 학습 쌍에서 선택) |
 
 ## 실행
 ```bash
@@ -224,6 +225,39 @@ CC가 0 변위 피크를 잡음 (outlier 85–99 %). 원인: 실제 배경 노�
 5. test2처럼 실린더·그림자 영역의 쓰레기 벡터가 많으면 PINN 평활화는 오차를 퍼뜨려 오히려 악화 (outlier 23 → 34 %);
    이런 입력에는 UOD가 적합. (2단계 결론 — "outlier 많으면 UOD 먼저" — 과 일치)
 6. 2단계(합성 후처리) 결과는 single-pass 입력 기준이며 재계산하지 않았다.
+
+## 5단계 — 마스킹 + 벡터 검증 (실제 영상)
+4단계에서 test2의 outlier는 96 %가 5개 이상 덩어리(최대 828개)로 뭉쳐 있어 UOD 3×3이 절반만 잡았고,
+PINN은 남은 덩어리를 퍼뜨렸다 (outlier 23 → 44 %). 원인은 학습 범위가 아니라 검증 단계였다.
+실제 PIV 소프트웨어의 표준대로 측정 영상만으로 판단하는 검증을 추가했다.
+- **자동 마스크** (`content_mask`): 포화 영역(모형 반사)과 입자 신호가 약한 창(그림자, 어두운 조명) 제외
+- **Peak ratio / 방향 신뢰도** (`window_quality`): R(+d)/R(나머지), R(+d)/R(−d)
+- **UOD 5×5** (`uod_flags`): 이웃 범위 확대, 이미 제외된 벡터는 비교에서 뺌
+- 임계값은 fine-tuning 학습 쌍(test2 0–2, r 0.7)에서 커버리지 ≥ 70 % 조건으로 선택 → 평가 쌍에 고정 적용.
+  선택 결과: 입자 신호 기준 0.6 + UOD 5×5 (peak ratio는 선택되지 않음). 고전 기법에도 같은 마스크·UOD 적용.
+
+outlier / 방향 오류 (커버리지 = 남은 벡터 / 신뢰 가능한 기준 벡터)
+
+| | auto-corr(부호 oracle) + 마스크 + UOD | U-Net multi-pass (검증 없음) | **U-Net + 마스크 + UOD5** | U-Net 검증 + 빈칸 보간 |
+|---|---|---|---|---|
+| test2 r 0.9 | 8.0 % / 0 % (커버리지 62 %) | 29.4 % / 18.1 % (100 %) | **11.1 % / 5.9 % (74 %)** | 23.4 % / 9.9 % (100 %) |
+| test2 r 0.7 | 12.2 % / 0 % (56 %) | 23.3 % / 9.0 % (100 %) | **7.2 % / 2.1 % (71 %)** | 18.3 % / 4.3 % (100 %) |
+| test2 r 0.5 | 28.1 % / 0 % (48 %) | 29.2 % / 5.5 % (100 %) | **9.1 % / 1.6 % (65 %)** | 17.8 % / 1.8 % (100 %) |
+| test1 r 0.7 | 0.3 % / 0 % (83 %) | 0.9 % / 0.2 % (100 %) | **0.0 % / 0 % (94 %)** | 0.0 % / 0 % (100 %) |
+| test1 r 0.5 | 1.9 % / 0 % (80 %) | 0.0 % / 0 % (100 %) | **0.0 % / 0 % (94 %)** | 0.0 % / 0 % (100 %) |
+
+비선형 auto-corr + 마스크 + UOD: test2 47–83 %, test1 2–15 % outlier (커버리지 48–67 %).
+
+![validation tradeoff](results/fig_validation_tradeoff.png)
+![validation map](results/fig_validation_map.png)
+
+### 관찰
+1. 마스킹 + UOD 5×5로 test2 outlier가 23–29 % → 7–11 %, 방향 오류 5–18 % → 2–6 %로 감소 (커버리지 65–74 %).
+2. 같은 검증을 적용한 부호-oracle auto-correlation보다 r ≤ 0.7에서 outlier가 적고 커버리지도 높다.
+   r = 0.9에서는 oracle 쪽 outlier가 더 낮다(8.0 % vs 11.1 %), 대신 커버리지가 낮다(62 % vs 74 %).
+3. 제거된 큰 구멍을 보간으로 채우면 커버리지 100 %가 되지만 outlier가 다시 18–23 %로 늘어난다 → 실제 PIV 관행대로 제거된 영역은 비워 두는 편이 정직하다.
+4. 후류 띠(속도 구배 큼)의 오차는 검증 후에도 남는다 — 창 평균의 한계(분리 후 PTV가 다음 단계).
+5. peak ratio는 학습 쌍에서 커버리지 대비 이득이 작아 선택되지 않았다.
 
 ## 선행 연구와의 관계
 - 방향 모호성과 pulse coding / image shifting: 1980년대 특허, Raffel et al., 강의 p.33–34
