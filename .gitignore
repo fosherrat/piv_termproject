@@ -2,5 +2,4 @@
 __pycache__/
 *.pyc
 data/
-results/train_log_wide_*.txt
-results/eval_stage1_log.txt
+results/eval_postproc_log.txt

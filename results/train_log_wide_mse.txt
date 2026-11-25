@@ -1,0 +1,43 @@
+{'n_train': 6000, 'n_val': 200, 'size': 128, 'steps': 4000, 'bs': 16, 'lr': 0.002, 'base': 24, 'loss': 'mse', 'ppp_max': 0.08, 'noise_max': 0.05, 'threads': 2, 'out': 'results/sep_unet_wide_mse.pt'}
+data built in 85s
+step   100  train 5.736e-03  val 6.374e-03  123s
+step   200  train 5.953e-03  val 6.212e-03  275s
+step   300  train 5.418e-03  val 6.454e-03  472s
+step   400  train 9.178e-03  val 6.059e-03  660s
+step   500  train 4.554e-03  val 6.044e-03  839s
+step   600  train 5.170e-03  val 6.020e-03  1022s
+step   700  train 6.312e-03  val 6.202e-03  1204s
+step   800  train 4.615e-03  val 6.083e-03  1394s
+step   900  train 6.248e-03  val 6.381e-03  1556s
+step  1000  train 5.385e-03  val 6.040e-03  1699s
+step  1100  train 5.009e-03  val 6.326e-03  1823s
+step  1200  train 6.193e-03  val 5.873e-03  1949s
+step  1300  train 7.399e-03  val 5.777e-03  2072s
+step  1400  train 6.615e-03  val 5.724e-03  2195s
+step  1500  train 4.904e-03  val 6.196e-03  2320s
+step  1600  train 4.221e-03  val 5.702e-03  2444s
+step  1700  train 6.974e-03  val 5.176e-03  2569s
+step  1800  train 4.511e-03  val 5.055e-03  2695s
+step  1900  train 5.647e-03  val 4.911e-03  2820s
+step  2000  train 3.725e-03  val 4.979e-03  2940s
+step  2100  train 3.750e-03  val 5.019e-03  3059s
+step  2200  train 4.135e-03  val 4.591e-03  3182s
+step  2300  train 6.419e-03  val 4.766e-03  3304s
+step  2400  train 5.727e-03  val 4.746e-03  3427s
+step  2500  train 6.150e-03  val 4.481e-03  3551s
+step  2600  train 5.009e-03  val 4.439e-03  3672s
+step  2700  train 3.870e-03  val 4.208e-03  3795s
+step  2800  train 5.350e-03  val 4.232e-03  3917s
+step  2900  train 5.078e-03  val 4.202e-03  4040s
+step  3000  train 5.741e-03  val 4.263e-03  4159s
+step  3100  train 3.927e-03  val 4.060e-03  4278s
+step  3200  train 4.705e-03  val 4.083e-03  4397s
+step  3300  train 5.648e-03  val 3.983e-03  4516s
+step  3400  train 4.580e-03  val 3.936e-03  4637s
+step  3500  train 3.789e-03  val 3.909e-03  4757s
+step  3600  train 3.826e-03  val 3.835e-03  4884s
+step  3700  train 4.957e-03  val 3.845e-03  5011s
+step  3800  train 5.126e-03  val 3.818e-03  5135s
+step  3900  train 5.317e-03  val 3.838e-03  5255s
+step  4000  train 3.476e-03  val 3.845e-03  5374s
+saved results/sep_unet_wide_mse.pt
