@@ -17,7 +17,7 @@ import numpy as np
 import torch
 
 from pivsep.synth import SynthParams, make_sample, gt_window_displacement
-from pivsep.correlation import cross_piv, auto_piv, asym_auto_piv
+from pivsep.correlation import cross_piv, auto_piv, asym_auto_piv, multipass_piv
 from pivsep.separation import SepUNet, threshold_split, unet_split
 
 METHODS = ["gt_cc", "auto", "auto_or", "asym", "thr_cc", "unet_cc"]
@@ -32,13 +32,15 @@ def _key(name):
     return "unet_cc" if name == "" else f"unet_cc:{name}"
 
 
-def run_image(model, s, win=32, step=16):
+def run_image(model, s, win=32, step=16, multipass=False):
     """model: a SepUNet or a dict {name: SepUNet} (several U-Nets compared at once)."""
     img, A, B = s["img"], s["A"], s["B"]
     cx, cy, *_ = cross_piv(A, B, win, step)
     gu, gv = gt_window_displacement(s["flow"], cx, cy, win)
     res = {}
     res["gt_cc"] = cross_piv(A, B, win, step)[2:]
+    if multipass:
+        res["gt_mp"] = multipass_piv(A, B)[2:]
     ua, va = auto_piv(img, win, step)[2:]
     flip = ua < 0                               # convention: dx > 0
     res["auto"] = (np.where(flip, -ua, ua), np.where(flip, -va, va))
@@ -51,6 +53,8 @@ def run_image(model, s, win=32, step=16):
     for name, m in _models(model).items():
         splits[name] = unet_split(m, img)
         res[_key(name)] = cross_piv(*splits[name], win, step)[2:]
+        if multipass:   # multi-pass + deformation, leakage peak masked (as for real data)
+            res[_key(name).replace("unet_cc", "unet_mp")] = multipass_piv(*splits[name], mask_r=3)[2:]
     uA, uB = next(iter(splits.values()))
     # velocity difference across one window, |grad d| * win  [px]  (course: should be small)
     h = cx[0, 1] - cx[0, 0]
@@ -86,13 +90,13 @@ def summarize(outs):
     return s
 
 
-def sweep(model, name, values, make_params, n_img, seed0=1000):
+def sweep(model, name, values, make_params, n_img, seed0=1000, multipass=False):
     table = {}
     for val in values:
         outs, seps = [], []
         for i in range(n_img):
             rng = np.random.default_rng(seed0 + i)       # same flow/particles across values
-            o, sp, _ = run_image(model, make_sample(rng, make_params(val)))
+            o, sp, _ = run_image(model, make_sample(rng, make_params(val)), multipass=multipass)
             outs.append(o); seps.append(sp)
         t = summarize(outs)
         t["sep_wrong"] = {k: float(np.mean([s[k] for s in seps])) for k in seps[0]}
@@ -110,6 +114,7 @@ def main():
                     help="one path, or several name=path pairs")
     ap.add_argument("--n-img", type=int, default=12)
     ap.add_argument("--out", default="results/eval.json")
+    ap.add_argument("--multipass", action="store_true")
     a = ap.parse_args()
     model = {}
     for spec in a.model:
@@ -121,11 +126,11 @@ def main():
 
     res = {}
     res["r"] = sweep(model, "r", [0.95, 0.9, 0.8, 0.7, 0.6, 0.5],
-                     lambda r: SynthParams(r=r), a.n_img)
+                     lambda r: SynthParams(r=r), a.n_img, multipass=a.multipass)
     res["ppp"] = sweep(model, "ppp", [0.015, 0.03, 0.05, 0.07, 0.09],
-                       lambda p: SynthParams(r=0.7, ppp=p), a.n_img)
+                       lambda p: SynthParams(r=0.7, ppp=p), a.n_img, multipass=a.multipass)
     res["noise"] = sweep(model, "noise", [0.005, 0.015, 0.03, 0.05, 0.07],
-                         lambda n: SynthParams(r=0.7, noise=n), a.n_img)
+                         lambda n: SynthParams(r=0.7, noise=n), a.n_img, multipass=a.multipass)
     with open(a.out, "w") as f:
         json.dump(res, f, indent=1)
     print("saved", a.out)

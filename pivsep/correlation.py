@@ -1,6 +1,7 @@
 """Window-based correlation PIV: cross-correlation, auto-correlation and an
 asymmetric (nonlinear) auto-correlation for pulse-coded double exposures."""
 import numpy as np
+from scipy import ndimage
 
 
 def window_grid(size, win=32, step=16):
@@ -35,12 +36,14 @@ def _subpix(c, i, j):
     return di, dj
 
 
-def _peak(c, mask_r=0):
+def _peak(c, mask_r=0, mask_at=(0.0, 0.0)):
+    """Highest correlation peak.  mask_r > 0 excludes a disc of radius mask_r centred at
+    displacement mask_at = (sx, sy)."""
     w = c.shape[0]
     cc = c.copy()
     if mask_r > 0:
         yy, xx = np.mgrid[:w, :w] - w // 2
-        cc[xx**2 + yy**2 <= mask_r**2] = -np.inf
+        cc[(xx - mask_at[0])**2 + (yy - mask_at[1])**2 <= mask_r**2] = -np.inf
     # avoid edges for subpixel
     cc[[0, -1], :] = -np.inf
     cc[:, [0, -1]] = -np.inf
@@ -85,3 +88,57 @@ def asym_auto_piv(I, win=32, step=16, mask_r=3, power=2):
     C = _corr(w**power, w)
     out = np.array([_peak(c, mask_r)[:2] for c in C])
     return cx, cy, out[:, 0].reshape(cx.shape), out[:, 1].reshape(cx.shape)
+
+
+# ----------------------------------------------------------------- multi-pass + deformation
+def _sample(field, cx, cy, x, y):
+    """Bilinear interpolation of a grid field (centres cx, cy) at points x, y."""
+    step = cx[0, 1] - cx[0, 0]
+    return ndimage.map_coordinates(field, [(y - cy[0, 0]) / step, (x - cx[0, 0]) / step],
+                                   order=1, mode="nearest")
+
+
+def multipass_piv(A, B, passes=((64, 32), (32, 16), (32, 16)), mask_r=0, validate=True,
+                  smooth=1.0):
+    """Multi-pass cross-correlation with symmetric window (image) deformation
+    (Scarano 2002 style).
+
+    pass k: the predictor field p(x) from pass k-1 is interpolated to every pixel and the
+    images are deformed symmetrically, A'(x) = A(x - p/2), B'(x) = B(x + p/2) (cubic spline),
+    so the residual displacement d - p is measured with a smaller window.
+    Between passes the field is validated (UOD + median replacement) and lightly smoothed.
+
+    mask_r > 0 (separated double exposures): a particle leaking into BOTH separated frames
+    produces a spurious peak at residual displacement -p (it is at 0 before deformation);
+    a disc of radius mask_r around -p is excluded in every pass.
+    The last pass uses the same grid as cross_piv(A, B, win=passes[-1][0], step=passes[-1][1]).
+    """
+    from .postproc import uod_median
+    H, W = A.shape
+    Y, X = np.mgrid[:H, :W].astype(float)
+    prev = None
+    for k, (win, step) in enumerate(passes):
+        sy, sx, cx, cy = window_grid(H, win, step)
+        if prev is None:
+            pu = np.zeros(cx.shape); pv = np.zeros(cx.shape); Ad, Bd = A, B
+        else:
+            gx, gy, gu, gv = prev
+            pu = _sample(gu, gx, gy, cx, cy); pv = _sample(gv, gx, gy, cx, cy)
+            du = _sample(gu, gx, gy, X, Y); dv = _sample(gv, gx, gy, X, Y)
+            Ad = ndimage.map_coordinates(A, [Y - dv / 2, X - du / 2], order=3, mode="nearest")
+            Bd = ndimage.map_coordinates(B, [Y + dv / 2, X + du / 2], order=3, mode="nearest")
+        wa = _windows(Ad, sy, sx, win); wb = _windows(Bd, sy, sx, win)
+        wa = wa - wa.mean((1, 2), keepdims=True)
+        wb = wb - wb.mean((1, 2), keepdims=True)
+        C = _corr(wa, wb)
+        res = np.array([_peak(c, mask_r, (-a, -b))[:2] for c, a, b in zip(C, pu.ravel(), pv.ravel())])
+        u = pu + res[:, 0].reshape(cx.shape)
+        v = pv + res[:, 1].reshape(cx.shape)
+        if k < len(passes) - 1:
+            if validate:
+                u, v, _ = uod_median(u, v)
+            if smooth:
+                u = ndimage.gaussian_filter(u, smooth, mode="nearest")
+                v = ndimage.gaussian_filter(v, smooth, mode="nearest")
+        prev = (cx, cy, u, v)
+    return cx, cy, u, v

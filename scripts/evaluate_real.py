@@ -17,7 +17,7 @@ import tifffile
 from PIL import Image
 from scipy import ndimage
 
-from pivsep.correlation import cross_piv, auto_piv, asym_auto_piv
+from pivsep.correlation import cross_piv, auto_piv, asym_auto_piv, multipass_piv
 from pivsep.separation import SepUNet, threshold_split, unet_split
 from pivsep.postproc import uod_median, pinn_fit
 
@@ -58,9 +58,12 @@ def crop(a):
     return a[:h, :w]
 
 
-def evaluate_pair(models, A, B, r):
+def evaluate_pair(models, A, B, r, multipass=False):
     I = make_double(A, B, r)
-    cx, cy, ru, rv = cross_piv(A, B, WIN, STEP)              # reference from real frames
+    if multipass:    # reference: multi-pass + window deformation on the real frames
+        cx, cy, ru, rv = multipass_piv(A, B)
+    else:
+        cx, cy, ru, rv = cross_piv(A, B, WIN, STEP)          # reference from real frames
     _, _, bad = uod_median(ru, rv)
     valid = ~bad & (np.hypot(ru, rv) > 2.0)                 # double exposure needs |d| > ~1.5 d_p
     res = {}
@@ -76,6 +79,10 @@ def evaluate_pair(models, A, B, r):
         u, v = cross_piv(sA, sB, WIN, STEP, mask_r=3)[2:]        # same centre mask as auto-corr
         res[f"unet_ccm:{name}"] = (u, v)
         res[f"unet_ccm:{name}+pinn"] = pinn_fit(cx, cy, *uod_median(u, v)[:2], steps=800)
+        if multipass:
+            u, v = multipass_piv(sA, sB, mask_r=3)[2:]
+            res[f"unet_mp:{name}"] = (u, v)
+            res[f"unet_mp:{name}+pinn"] = pinn_fit(cx, cy, *uod_median(u, v)[:2], steps=800)
     out = {}
     for k, (u, v) in res.items():
         e = np.hypot(u - ru, v - rv)[valid]
@@ -90,6 +97,7 @@ def main():
     ap.add_argument("--r", nargs="+", type=float, default=[0.9, 0.7, 0.5])
     ap.add_argument("--sets", nargs="+", default=None, help="subset of pair names")
     ap.add_argument("--out", default="results/eval_real.json")
+    ap.add_argument("--multipass", action="store_true", help="multi-pass reference + multi-pass methods")
     a = ap.parse_args()
     models = {}
     for spec in a.model:
@@ -105,7 +113,7 @@ def main():
             outs = []
             for n in [n for n in names if n.startswith(group)]:
                 A, B = normalize_pair(*(crop(preprocess(load(f))) for f in P[n]))
-                outs.append(evaluate_pair(models, A, B, r)[0])
+                outs.append(evaluate_pair(models, A, B, r, a.multipass)[0])
             if not outs:
                 continue
             t = {}
@@ -114,7 +122,7 @@ def main():
                 t[k] = dict(n=int(e.size), median=float(np.median(e)), outlier=float(np.mean(e > 1)),
                             sign_err=float(np.mean(sg)))
             table[f"{group}/r{r}"] = t
-            print(f"{group} r={r} (n={t['asym']['n']}): " + "  ".join(
+            print(f"{group} r={r} (n={t['asym']['n']}): " + "\n   ".join(
                 f"{k}: out {v['outlier']:.3f} sgn {v['sign_err']:.3f} med {v['median']:.3f}" for k, v in t.items()),
                 flush=True)
     with open(a.out, "w") as f:
