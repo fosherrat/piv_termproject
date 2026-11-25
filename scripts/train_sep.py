@@ -34,7 +34,17 @@ def build(n, size, seed):
 
 
 def loss_fn(m, x, y):
+    """Reconstruction MSE of A_hat = m*I and B_hat = (1-m)*I (also the val metric)."""
     return F.mse_loss(m * x, y[:, :1]) + F.mse_loss((1 - m) * x, y[:, 1:])
+
+
+def bce_loss(m, x, y):
+    """Per-pixel classification: target mask A/(A+B), weighted by particle intensity
+    so that background pixels do not count and dim particles still do."""
+    s = y.sum(1, keepdim=True)
+    t = (y[:, :1] / (s + 1e-6)).clamp(0, 1)
+    w = (s / (s.amax((2, 3), keepdim=True) + 1e-6)).sqrt()
+    return (F.binary_cross_entropy(m.clamp(1e-5, 1 - 1e-5), t, reduction="none") * w).sum() / w.sum()
 
 
 def main():
@@ -46,6 +56,7 @@ def main():
     ap.add_argument("--bs", type=int, default=16)
     ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--base", type=int, default=24)
+    ap.add_argument("--loss", choices=["mse", "bce"], default="mse")
     ap.add_argument("--out", default="results/sep_unet.pt")
     a = ap.parse_args()
     torch.manual_seed(0)
@@ -69,7 +80,8 @@ def main():
         x, y = torch.rot90(x, k, (2, 3)), torch.rot90(y, k, (2, 3))
         if torch.rand(1, generator=g) < .5:
             x, y = x.flip(3), y.flip(3)
-        loss = loss_fn(model(x), x, y)
+        m = model(x)
+        loss = loss_fn(m, x, y) if a.loss == "mse" else bce_loss(m, x, y)
         opt.zero_grad(); loss.backward(); opt.step(); sched.step()
         if step % 100 == 0 or step == a.steps:
             model.eval()
