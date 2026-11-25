@@ -25,6 +25,8 @@ U-Net이 한 장의 double exposure를 **frame A(1st pulse) / frame B(2nd pulse)
 | `scripts/evaluate_postproc.py`, `scripts/make_figures_postproc.py` | 2단계 평가·그림 |
 | `scripts/finetune_real.py` | 3단계: 실제 프레임 self-supervised fine-tuning |
 | `scripts/evaluate_real.py`, `scripts/make_figures_real.py` | 3단계: 실제 영상 평가·그림 |
+| `pivsep/correlation.py: multipass_piv` | 4단계: multi-pass + 대칭 window deformation |
+| `scripts/make_figures_mp.py` | 4단계 그림 (`evaluate.py --multipass`, `evaluate_real.py --multipass` 결과) |
 
 ## 실행
 ```bash
@@ -179,6 +181,50 @@ CC가 0 변위 피크를 잡음 (outlier 85–99 %). 원인: 실제 배경 노�
 5. 주의: 기준값은 실제 A, B로 구한 CC(정답 아님)이며, 합성 double exposure(A + r·B)는 실제 펄스 코딩 촬영
    (레이저 세기 조절, 카메라 포화·비선형성)을 완전히 재현하지 않는다.
 
+## 4단계 — Multi-pass + window deformation (실제 PIV 표준 처리)
+실제 PIV 소프트웨어(DaVis, Insight, PIVlab 등)의 표준인 multi-pass + window deformation을 구현 (`multipass_piv`).
+- 64 → 32 → 32 px (50 % overlap), 마지막 격자는 single-pass 32/16과 동일 → 직접 비교
+- 대칭 영상 변형 A'(x) = A(x − p/2), B'(x) = B(x + p/2) (cubic spline), pass 사이 UOD + 약한 평활
+- pass ≥ 2: 잔차 탐색 |s| ≤ win/4 (¼ 규칙), 퇴화된 sub-pixel 맞춤(|δ| > 1 px) 무시 — 없으면 저화질 영역에서 벡터 발산
+- 분리 영상용 누출 마스크: 두 프레임에 동시에 남은 입자의 가짜 피크는 변형 후 −p 로 이동하므로 마스크도 −p 를 따라감
+- 실제 영상의 **기준값도 multi-pass**로 변경 (single-pass 기준 대비 test2에서 벡터 8.9 %가 1 px 이상 차이)
+
+### 합성 (outlier / median)
+| 조건 | 정답 A/B single | 정답 A/B multi | U-Net single | **U-Net multi** |
+|---|---|---|---|---|
+| r = 0.95 | 0.4% / 0.137 | 0.1% / 0.095 | 31.4% / 0.242 | **11.4% / 0.149** |
+| r = 0.9 | 0.4% / 0.137 | 0.1% / 0.095 | 7.1% / 0.169 | **1.7% / 0.123** |
+| r = 0.7 | 0.4% / 0.137 | 0.1% / 0.095 | 0.6% / 0.154 | 1.2% / **0.114** |
+| ppp 0.09 | 0.2% / 0.115 | 0.0% / 0.087 | 7.9% / 0.171 | **1.1% / 0.135** |
+| noise 0.07 | 0.4% / 0.137 | 0.1% / 0.095 | 6.9% / 0.210 | **1.5% / 0.164** |
+| 구배 > 4 px (r 0.7) | 43% | **7%** | 57% | **21%** |
+
+![mp synth](results/fig_mp_synth.png)
+
+### 실제 영상 (multi-pass 기준값; outlier / 방향 오류)
+| | 비선형 auto-corr | auto-corr (부호 oracle) | U-Net single | **U-Net multi** | **U-Net multi + UOD** |
+|---|---|---|---|---|---|
+| test1 r 0.9 | 42.9% / 35.8% | 8.2% / 0% | 21.0% / 17.2% | 11.2% / 5.8% | **8.4% / 3.9%** |
+| test1 r 0.7 | 29.6% / 20.8% | 9.4% / 0% | 8.6% / 5.4% | 0.9% / 0.2% | **0.2% / 0%** |
+| test1 r 0.5 | 42.3% / 23.0% | 17.4% / 0% | 3.0% / 0.4% | **0.0% / 0%** | **0.0% / 0%** |
+| test2 r 0.9 | 68.7% / 37.4% | 29.4% / 0% | 48.2% / 30.3% | 29.4% / 18.1% | **26.7% / 17.6%** |
+| test2 r 0.7 | 74.8% / 37.7% | 37.8% / 0% | 51.5% / 28.8% | 23.3% / 9.0% | **17.7% / 8.0%** |
+| test2 r 0.5 | 86.0% / 42.1% | 54.5% / 0% | 64.8% / 33.6% | 29.2% / 5.5% | **17.2% / 4.8%** |
+
+![mp real](results/fig_mp_real_bars.png)
+![mp real vectors](results/fig_mp_real_vectors.png)
+
+### 관찰
+1. multi-pass는 **어려운 조건**(r → 1, 고밀도, 고노이즈, 큰 속도 구배)에서 효과가 크다: 합성 U-Net outlier 7–8 % → 1–2 %, 구배 > 4 px에서 57 % → 21 %.
+2. 쉬운 조건(r ≤ 0.7, 기본 밀도·노이즈)에서는 U-Net multi-pass outlier가 0.6 → 1.2 %로 약간 늘지만 median은 0.154 → 0.114 px로 개선.
+   (누출 마스크·¼ 제한이 일부 창에서 정답 피크를 가리는 것으로 추정)
+3. 실제 영상 test1: r = 0.7에서 outlier 0.9 % (+UOD 0.2 %), r = 0.5에서 0 % — 부호 oracle auto-correlation보다 훨씬 정확.
+4. 실제 영상 test2: **모든 r에서 부호 oracle auto-correlation보다 outlier가 적다** (r 0.5: 54.5 % → 17.2 %).
+   즉 분리 → 표준 multi-pass CC 파이프라인이 auto-correlation 계열의 원리적 한계(자기 피크, 대칭)를 넘어선다.
+5. test2처럼 실린더·그림자 영역의 쓰레기 벡터가 많으면 PINN 평활화는 오차를 퍼뜨려 오히려 악화 (outlier 23 → 34 %);
+   이런 입력에는 UOD가 적합. (2단계 결론 — "outlier 많으면 UOD 먼저" — 과 일치)
+6. 2단계(합성 후처리) 결과는 single-pass 입력 기준이며 재계산하지 않았다.
+
 ## 선행 연구와의 관계
 - 방향 모호성과 pulse coding / image shifting: 1980년대 특허, Raffel et al., 강의 p.33–34
 - 비대칭 auto-correlation: Marzouk & Hart (1998, Exp. Fluids)
@@ -190,6 +236,7 @@ CC가 0 변위 피크를 잡음 (outlier 85–99 %). 원인: 실제 배경 노�
 
 ## 한계와 향후 연구
 - 실제 영상 검증은 OpenPIV 예제 2종에 한정, double exposure는 실제 프레임 합성(A + r·B) → 실제 pulse-coded 촬영 필요
-- r → 1, 큰 속도 구배, 고밀도에서 성능 저하 → multi-pass / window deformation 결합, 분리 후 PTV
+- r → 1에서 여전히 성능 저하, multi-pass 후에도 큰 구배(> 4 px)에서 21 % outlier → 분리 후 PTV, 더 작은 최종 창
+- 불확도 정량화(UQ) 미구현
 - U-Net + 비선형 auto-corr 결합(앙상블)으로 군집 방향 오류 감소
 - stereo / tomographic PIV로 확장 시 3D 발산(벡터 퍼텐셜) 적용
