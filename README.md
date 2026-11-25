@@ -49,6 +49,7 @@ python scripts/make_figures_real.py
 python scripts/evaluate_pivc.py && python scripts/make_figures_pivc.py
 # 6단계: LML 생성기 빌드(third_party/lml) 후 평가 (생성 결과는 실행마다 다름: 시계 seed)
 scripts/build_lml.sh && python scripts/evaluate_lml.py && python scripts/make_figures_lml.py
+python scripts/evaluate_lml_pinn.py      # PINN 후처리, 병진만 (CPU 약 35분)
 ```
 
 ## 비교 방법
@@ -332,6 +333,23 @@ plasma r 0.7, 창 하나에 걸친 속도 차(|∇d|·32)별 outlier
    (학습 합성 유동은 대부분 창당 속도 차 0–2 px로 완만함 → 학습 분포에 강한 전단·큰 입자를 추가하면 개선될 것으로 예상)
 4. 이번엔 zero-shot이 fine-tuned보다 약간 낫다 (fine-tuning은 작은 입자의 실제 영상 test2에 맞춰져 있음).
 5. 1단계 합성과 달리 UOD는 plasma에서 악화(18.7 → 23.5 %): 강한 구배의 정상 벡터를 outlier로 판정 (2단계 관찰 1과 같음).
+
+
+### PINN 후처리 (병진 유동만)
+plasma 장은 발산 0이 아니라 PINN(발산 0 stream-function 맞춤)의 가정이 맞지 않으므로 제외하고, 균일 병진에서만 평가 (`scripts/evaluate_lml_pinn.py`, U-Net zero-shot multi-pass 입력, 조건당 12장).
+
+| r | multi-pass | + UOD | + PINN | **+ UOD + PINN** |
+|---|---|---|---|---|
+| 0.9 | 2.7% / 0.251 / 0.602 | 0.9% / 0.244 / 0.345 | 1.3% / 0.219 / 0.348 | **0.5% / 0.209 / 0.297** |
+| 0.7 | 0.5% / 0.184 / 0.361 | 0.0% / 0.181 / 0.261 | 0.1% / 0.166 / 0.256 | **0.0% / 0.160 / 0.225** |
+| 0.5 | 1.0% / 0.305 / 0.400 | 0.5% / 0.302 / 0.379 | 0.4% / 0.309 / 0.362 | **0.1% / 0.306 / 0.349** |
+
+(outlier / median / RMS 오차, px)
+
+- 여기서는 PINN이 **오차를 키우지 않고 모든 지표를 개선**한다 (UOD + PINN: outlier 0–0.5 %, RMS −15~50 %).
+- 3단계 test1에서 PINN이 median을 0.19 → 0.38 px로 키운 것과 대조: test1의 기준(실제 A,B CC)에는 작은 규모 구조·노이즈가 있어 평활화가 그것까지 지웠지만,
+  균일 병진은 지울 구조가 없다. 즉 **PINN에 가장 유리한 조건**이라 PINN의 평활화 편향을 검증하는 시험은 아니다.
+- 남은 median 오차(0.16–0.31 px)는 분리·상관 단계의 오차이며 PINN으로 줄지 않는다 (r 0.5에서 특히).
 
 ## 선행 연구와의 관계
 - 방향 모호성과 pulse coding / image shifting: 1980년대 특허, Raffel et al., 강의 p.33–34

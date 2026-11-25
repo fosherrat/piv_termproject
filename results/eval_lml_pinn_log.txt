@@ -1,0 +1,52 @@
+  r=0.9 image 1/12 (62s)
+  r=0.9 image 2/12 (118s)
+  r=0.9 image 3/12 (178s)
+  r=0.9 image 4/12 (239s)
+  r=0.9 image 5/12 (300s)
+  r=0.9 image 6/12 (362s)
+  r=0.9 image 7/12 (424s)
+  r=0.9 image 8/12 (485s)
+  r=0.9 image 9/12 (545s)
+  r=0.9 image 10/12 (609s)
+  r=0.9 image 11/12 (673s)
+  r=0.9 image 12/12 (734s)
+translation r=0.9:
+   mp           outlier 0.027  median 0.251  rms 0.602
+   mp+uod       outlier 0.009  median 0.244  rms 0.345
+   mp+pinn      outlier 0.013  median 0.219  rms 0.348
+   mp+uod+pinn  outlier 0.005  median 0.209  rms 0.297
+  r=0.7 image 1/12 (59s)
+  r=0.7 image 2/12 (121s)
+  r=0.7 image 3/12 (182s)
+  r=0.7 image 4/12 (245s)
+  r=0.7 image 5/12 (306s)
+  r=0.7 image 6/12 (366s)
+  r=0.7 image 7/12 (427s)
+  r=0.7 image 8/12 (485s)
+  r=0.7 image 9/12 (545s)
+  r=0.7 image 10/12 (607s)
+  r=0.7 image 11/12 (666s)
+  r=0.7 image 12/12 (724s)
+translation r=0.7:
+   mp           outlier 0.005  median 0.184  rms 0.361
+   mp+uod       outlier 0.000  median 0.181  rms 0.261
+   mp+pinn      outlier 0.001  median 0.166  rms 0.256
+   mp+uod+pinn  outlier 0.000  median 0.160  rms 0.225
+  r=0.5 image 1/12 (57s)
+  r=0.5 image 2/12 (115s)
+  r=0.5 image 3/12 (175s)
+  r=0.5 image 4/12 (232s)
+  r=0.5 image 5/12 (292s)
+  r=0.5 image 6/12 (352s)
+  r=0.5 image 7/12 (410s)
+  r=0.5 image 8/12 (470s)
+  r=0.5 image 9/12 (526s)
+  r=0.5 image 10/12 (580s)
+  r=0.5 image 11/12 (634s)
+  r=0.5 image 12/12 (689s)
+translation r=0.5:
+   mp           outlier 0.010  median 0.305  rms 0.400
+   mp+uod       outlier 0.005  median 0.302  rms 0.379
+   mp+pinn      outlier 0.004  median 0.309  rms 0.362
+   mp+uod+pinn  outlier 0.001  median 0.306  rms 0.349
+saved results/eval_lml_pinn.json
