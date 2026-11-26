@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 data/
 results/eval_mp_*_log.txt
+results/pivc_fields.npz
+third_party/

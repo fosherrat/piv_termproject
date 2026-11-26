@@ -28,6 +28,8 @@ U-Net이 한 장의 double exposure를 **frame A(1st pulse) / frame B(2nd pulse)
 | `pivsep/correlation.py: multipass_piv` | 4단계: multi-pass + 대칭 window deformation |
 | `scripts/make_figures_mp.py` | 4단계 그림 (`evaluate.py --multipass`, `evaluate_real.py --multipass` 결과) |
 | `scripts/evaluate_validation.py`, `scripts/make_figures_validation.py` | 5단계: 자동 마스크 + 검증 (임계값은 학습 쌍에서 선택) |
+| `scripts/evaluate_pivc.py`, `scripts/make_figures_pivc.py` | 6단계: PIV Challenge 2001 case C 외부 검증 |
+| `scripts/build_lml.sh`, `scripts/evaluate_lml.py`, `scripts/make_figures_lml.py` | 7단계: Lille LML 생성기로 독립 합성 검증 |
 
 ## 실행
 ```bash
@@ -44,6 +46,11 @@ python scripts/finetune_real.py --init results/sep_unet_wide_bce.pt --steps 1500
 python scripts/evaluate_real.py --model zeroshot=results/sep_unet_wide_bce.pt finetuned=results/sep_unet_ft_real.pt \
     --sets test1 test2_3 test2_4 test2_5
 python scripts/make_figures_real.py
+# 6단계: PIV Challenge 2001 case C zip을 data/pivchallenge_C/ 에 압축 해제한 뒤
+python scripts/evaluate_pivc.py && python scripts/make_figures_pivc.py
+# 7단계: LML 생성기 빌드(third_party/lml) 후 평가 (생성 결과는 실행마다 다름: 시계 seed)
+scripts/build_lml.sh && python scripts/evaluate_lml.py && python scripts/make_figures_lml.py
+python scripts/evaluate_lml_pinn.py      # PINN 후처리, 병진만 (CPU 약 35분)
 ```
 
 ## 비교 방법
@@ -258,6 +265,124 @@ outlier / 방향 오류 (커버리지 = 남은 벡터 / 신뢰 가능한 기준 
 3. 제거된 큰 구멍을 보간으로 채우면 커버리지 100 %가 되지만 outlier가 다시 18–23 %로 늘어난다 → 실제 PIV 관행대로 제거된 영역은 비워 두는 편이 정직하다.
 4. 후류 띠(속도 구배 큼)의 오차는 검증 후에도 남는다 — 창 평균의 한계(분리 후 PTV가 다음 단계).
 5. peak ratio는 학습 쌍에서 커버리지 대비 이득이 작아 선택되지 않았다.
+## 6단계 — 외부 검증: PIV Challenge 2001 case C (강한 벽 반사)
+데이터: PIV Challenge 2001 case C (Stanislas; 원심 임펠러, YAG 300 mJ, PEG smoke ≈1 µm, 1000×512 px, Kodak ES1.0).
+블레이드 trailing edge의 **강한 반사·flare**, 대각선 그림자, 디퓨저 벽(두 원호)이 있는 실제 영상. 배경 영상 2장(Cbg_1/2)과 마스크(Cmask_1) 제공.
+저장소에는 포함하지 않음 → `data/pivchallenge_C/`에 압축 해제 후 사용. **학습·fine-tuning에 case C는 전혀 쓰지 않음** (기존 모델 그대로, 순수 cross-domain 시험).
+
+- 기준값: 실제 A, B(배경 영상 차감)의 multi-pass CC (64→32→32, 격자 32/16 = challenge 기준 해석과 동일 간격)
+  - 평균 변위 (U, V) = (−8.51, −4.63) px, u′ = 2.26, v′ = 1.85 px, |d| 중앙값 10.8 px
+- 평가 벡터: 중심이 마스크 밖(case C 규칙) & 기준이 UOD 통과 & |d| > 2 px → 1559 / 1728
+- 두 가지 double exposure: **bgsub**(배경 영상 차감 후 I = A + r·B), **raw**(배경 영상 없이 → 반사가 두 번 더해진 채로 남음)
+- 코드 수정: `window_grid`가 정사각형 영상만 가정(`shape[0]`)하던 문제 수정 → 직사각형 영상 전체 격자 사용
+  (이전 test1(368×496) 결과는 왼쪽 368×368 영역만 평가한 것임; 재계산하지 않음)
+
+### 결과 — outlier / 방향 오류 (실제 A,B multi-pass CC 기준, n = 1559)
+**bgsub (배경 영상 차감)**
+
+| r | 비선형 auto-corr | auto-corr (부호 oracle) | zero-shot multi | fine-tuned single | **fine-tuned multi** | **+ UOD** |
+|---|---|---|---|---|---|---|
+| 0.9 | 61.8% / 37.3% | 28.2% / 0% | 75.0% / 53.6% | 60.9% / 43.5% | 35.2% / 16.9% | **31.9% / 16.0%** |
+| 0.7 | 60.6% / 31.0% | 30.4% / 0% | 22.5% / 5.8% | 48.0% / 30.4% | 12.5% / 2.1% | **11.0% / 2.1%** |
+| 0.5 | 73.1% / 35.7% | 40.0% / 0% | 24.1% / 5.4% | 47.0% / 25.4% | 13.3% / 2.9% | **10.8% / 2.6%** |
+
+**raw (반사 유지)**
+
+| r | 비선형 auto-corr | auto-corr (부호 oracle) | zero-shot multi | fine-tuned single | **fine-tuned multi** | **+ UOD** |
+|---|---|---|---|---|---|---|
+| 0.9 | 64.8% / 38.7% | 30.0% / 0% | 62.0% / 34.3% | 61.7% / 42.5% | 39.1% / 20.6% | **35.8% / 20.7%** |
+| 0.7 | 62.2% / 33.8% | 32.6% / 0% | 25.4% / 4.7% | 49.5% / 30.0% | 17.7% / 3.2% | **15.3% / 3.0%** |
+| 0.5 | 74.3% / 36.4% | 41.5% / 0% | 27.7% / 6.1% | 53.0% / 28.3% | 20.7% / 4.4% | **17.4% / 4.0%** |
+
+median 오차 (fine-tuned multi, r 0.7): bgsub 0.18 px, raw 0.19 px.
+처리 시간: 분리 + multi-pass ≈ 0.7 ms/vector (CPU 4코어).
+
+반사 세기별 outlier (r 0.7, 창 안 Cbg_1 평균 밝기 0–40 / 40–80 / 80–255, n = 1084 / 291 / 183)
+
+| | 0–40 | 40–80 | 80–255 (강한 반사) |
+|---|---|---|---|
+| auto-corr (부호 oracle), bgsub | 25.1% | 26.5% | 67.8% |
+| fine-tuned multi + UOD, bgsub | **4.6%** | **10.7%** | **48.6%** |
+| fine-tuned multi + UOD, raw | 8.6% | 15.1% | 54.6% |
+
+![pivc bars](results/fig_pivc_bars.png)
+![pivc vectors](results/fig_pivc_vectors.png)
+
+### 관찰
+1. **학습에 없던 실험·장치(임펠러, 1 µm smoke, 매우 높은 밀도)에서도 4단계 결론이 유지된다**: r ≤ 0.7에서 분리 → multi-pass CC가
+   부호 oracle auto-correlation보다 outlier 2–4배 적고(11 % vs 30–40 %), 방향 오류 2–3 %. 고전 비선형 auto-corr은 60 % 이상 실패.
+2. 변위가 커서(≈ 11 px, 32 px 창의 1/3) **single-pass는 모든 방법이 실패** (¼ 규칙 위반, 입자 쌍 손실) → 64 px 첫 pass가 필수.
+3. 실제 프레임 fine-tuning(test2 실린더 후류)이 다른 실험에도 일반화: zero-shot 대비 outlier 22.5 → 12.5 % (r 0.7).
+4. 남은 outlier는 **강한 반사 영역**(trailing edge flare, 위쪽 중앙)과 블레이드·그림자 경계에 집중.
+   이 영역은 기준값(실제 A,B CC) 자체도 불안정하므로 일부는 기준 오차. 배경 영상이 없으면(raw) outlier가 +4–7 %p 증가 — 반사 제거 전처리가 중요.
+5. r = 0.9는 여전히 어렵다 (32 %, 방향 오류 16 %).
+6. 주의: double exposure는 실제 프레임 합성(A + r·B)이며, 실제 펄스 코딩 촬영에서는 두 번째 노출 시간(32 ms)의 배경광·포화가 다르게 나타난다.
+   challenge 참가팀 결과와의 직접 비교는 하지 않았다 (본 프로젝트의 문제 설정이 다름).
+
+## 7단계 — 독립 합성 검증: Lille LML 영상 생성기
+우리 합성기(`pivsep/synth.py`)로 학습·평가하면 생성기의 가정이 결과에 섞일 수 있으므로,
+**PIV Challenge case C를 제공한 Lille LML 연구실의 공개 생성기**(S. Coudert, [PGlml](https://github.com/coupdair/PGlml) / [DGlml](https://github.com/coupdair/DGlml) / [SIGlml](https://github.com/coupdair/SIGlml), CImg 1.3.0)로 만든 영상으로 다시 평가했다.
+- 입자(위치·크기·밝기), 변위장, 렌더링(가우시안 sprite 덧셈, 회색조 35 미만 꼬리 절단, 균일 노이즈, 배경 경사, 8-bit 포화)은 모두 LML 도구가 만든다.
+  **우리 변경은 펄스 코딩 하나**: DGlml의 double exposure는 두 노출의 밝기가 같으므로(방향 정보 없음) 2번 노출 입자 밝기에 r을 곱한 뒤 SIGlml로 렌더링.
+- 우리 합성기와 다른 점(→ 분포 밖 시험): 입자 σ 1–2 px(지름 4–8 px, 우리 2.8 px), 밝기 균일 200–255(light sheet 분포·면외 손실 없음), 8-bit 양자화·포화,
+  변위장 "plasma"(무작위, 발산 0 아님, 평균 유동 없음 → 영상 안에서 방향이 바뀜) 또는 균일 병진(|d| 4–8 px, 방향 무작위).
+- 빌드: `scripts/build_lml.sh` (원본 소스는 수정하지 않고 빌드용 사본만 2군데 수정: 디스플레이 없는 환경에서 abort하는 debug `display()` 끔,
+  SIGlml이 호출하는 6-인자 `add_sprite`가 공개된 plugin에 없어 5-인자(덧셈) 버전으로 넘기는 shim)
+- **DGlml 버그 발견**: plasma 모드는 변위 맵을 `(int)x, (int)y`로 경계 검사 없이 읽어 영상 밖(음수 좌표) 입자가 있으면 segfault → 입자를 [0, L)에서 만들고 −pad 이동해 우회.
+- LML 도구는 난수를 시계로 seed하므로 재현 불가 → 생성 샘플(영상 + 입자 목록)을 `data/lml/`에 저장하고 평가는 그 캐시로 수행.
+- 정답: 창 안에 중점이 있는 입자들의 변위 평균(밝기 가중). 검증: 따로 렌더링한 A, B의 multi-pass CC와 중앙 오차 0.03 px(병진) / 0.2 px(plasma).
+- 256×256, 조건당 12장, 밀도 0.01 ppp(32×32 창당 입자 ≈ 10개, 포화 화소 ≈ 3 %). 기준 밀도 0.03 ppp는 LML 입자가 커서 포화 20 %라 사용하지 않음. 평가는 |d| > 2 px.
+- **두 U-Net 모두 재학습 없음** (zero-shot = 우리 합성으로만 학습, fine-tuned = 실제 test2 프레임 추가 학습).
+
+### 결과 — outlier / 방향 오류
+| 조건 | 비선형 auto-corr | auto-corr (부호 oracle) | U-Net zero-shot single | **U-Net zero-shot multi** | U-Net fine-tuned multi | 정답 A/B multi (상한) |
+|---|---|---|---|---|---|---|
+| 병진 r 0.9 | 50.7% / 26.6% | 48.2% / 0% | 11.4% / 1.2% | **2.7% / 0.1%** | 4.8% / 0% | 0% |
+| 병진 r 0.7 | 40.9% / 14.1% | 53.0% / 0% | 4.4% / 0.2% | **0.5% / 0%** | 1.2% / 0% | 0% |
+| 병진 r 0.5 | 64.2% / 14.8% | 79.0% / 0% | 8.6% / 0.1% | **1.0% / 0%** | 1.5% / 0% | 0% |
+| plasma r 0.9 | 65.1% / 30.2% | 60.5% / 0% | 47.8% / 8.9% | **35.1% / 3.9%** | 39.9% / 2.4% | 0.8% |
+| plasma r 0.7 | 60.4% / 19.9% | 68.2% / 0% | 32.6% / 1.8% | **18.7% / 0.4%** | 23.1% / 0.6% | 0.7% |
+| plasma r 0.5 | 68.1% / 21.5% | 73.1% / 0% | 33.0% / 2.9% | **22.8% / 1.3%** | 25.8% / 1.1% | 0.7% |
+
+밀도(r 0.7, 0.005 / 0.01 / 0.02 ppp): U-Net zero-shot multi — 병진 3.4 / 0.5 / 0.3 %, plasma 29.3 / 18.7 / 21.6 %.
+
+plasma r 0.7, 창 하나에 걸친 속도 차(|∇d|·32)별 outlier
+
+| 속도 차 | 0–1 px (n=23) | 1–2 px (n=296) | 2–4 px (n=1554) | > 4 px (n=651) |
+|---|---|---|---|---|
+| 정답 A/B multi | 0% | 0% | 0.1% | 2.3% |
+| 비선형 auto-corr | 39% | 50% | 60% | 68% |
+| **U-Net zero-shot multi** | **0%** | **8.4%** | **16.9%** | **28.1%** |
+
+![lml](results/fig_lml.png)
+
+### 관찰
+1. **다른 연구실의 생성기에서도 핵심 결론이 유지된다**: 균일 병진에서 U-Net 분리 → multi-pass CC는 r 0.5–0.9 모두 outlier ≤ 2.7 %, 방향 오류 ≈ 0 %.
+   plasma(영상 안에서 방향이 바뀌는 유동)에서도 **방향 오류는 0.4–1.3 %** (r ≤ 0.7) — 펄스 코딩 방향 판별 자체는 생성기와 무관하게 작동.
+2. 고전 auto-correlation은 LML 영상에서 크게 실패(부호를 알려줘도 48–79 %): LML 입자 지름(4–8 px)이 변위(4–8 px)와 비슷해 두 상이 겹친다
+   (double exposure 전제 |d| > 1.5 d_p 위반; 중심 마스크를 3 → 6 px로 키워도 53 → 41 %). **U-Net 분리는 상이 겹쳐도 작동**한다는 점이 이 조건에서 드러남.
+3. 남은 약점은 **강한 전단 + 겹친 입자 쌍**: plasma에서 outlier 19–35 %, 속도 구배에 따라 0 → 8 → 17 → 28 %로 증가하고 |d| < 6 px(겹침)에서 큼.
+   정답 A/B CC는 같은 창에서 ≤ 2.3 %이므로 상관 단계가 아니라 **분리 단계의 한계**. 대부분 크기 오차이고 방향은 맞음.
+   (학습 합성 유동은 대부분 창당 속도 차 0–2 px로 완만함 → 학습 분포에 강한 전단·큰 입자를 추가하면 개선될 것으로 예상)
+4. 이번엔 zero-shot이 fine-tuned보다 약간 낫다 (fine-tuning은 작은 입자의 실제 영상 test2에 맞춰져 있음).
+5. 1단계 합성과 달리 UOD는 plasma에서 악화(18.7 → 23.5 %): 강한 구배의 정상 벡터를 outlier로 판정 (2단계 관찰 1과 같음).
+
+
+### PINN 후처리 (병진 유동만)
+plasma 장은 발산 0이 아니라 PINN(발산 0 stream-function 맞춤)의 가정이 맞지 않으므로 제외하고, 균일 병진에서만 평가 (`scripts/evaluate_lml_pinn.py`, U-Net zero-shot multi-pass 입력, 조건당 12장).
+
+| r | multi-pass | + UOD | + PINN | **+ UOD + PINN** |
+|---|---|---|---|---|
+| 0.9 | 2.7% / 0.251 / 0.602 | 0.9% / 0.244 / 0.345 | 1.3% / 0.219 / 0.348 | **0.5% / 0.209 / 0.297** |
+| 0.7 | 0.5% / 0.184 / 0.361 | 0.0% / 0.181 / 0.261 | 0.1% / 0.166 / 0.256 | **0.0% / 0.160 / 0.225** |
+| 0.5 | 1.0% / 0.305 / 0.400 | 0.5% / 0.302 / 0.379 | 0.4% / 0.309 / 0.362 | **0.1% / 0.306 / 0.349** |
+
+(outlier / median / RMS 오차, px)
+
+- 여기서는 PINN이 **오차를 키우지 않고 모든 지표를 개선**한다 (UOD + PINN: outlier 0–0.5 %, RMS −15~50 %).
+- 3단계 test1에서 PINN이 median을 0.19 → 0.38 px로 키운 것과 대조: test1의 기준(실제 A,B CC)에는 작은 규모 구조·노이즈가 있어 평활화가 그것까지 지웠지만,
+  균일 병진은 지울 구조가 없다. 즉 **PINN에 가장 유리한 조건**이라 PINN의 평활화 편향을 검증하는 시험은 아니다.
+- 남은 median 오차(0.16–0.31 px)는 분리·상관 단계의 오차이며 PINN으로 줄지 않는다 (r 0.5에서 특히).
 
 ## 선행 연구와의 관계
 - 방향 모호성과 pulse coding / image shifting: 1980년대 특허, Raffel et al., 강의 p.33–34
@@ -269,7 +394,7 @@ outlier / 방향 오류 (커버리지 = 남은 벡터 / 신뢰 가능한 기준 
 - 본 프로젝트의 차별점: **밝기 코딩 + CNN 분리 → 표준 CC** 결합과, z-밝기 편차 하에서의 정량 비교
 
 ## 한계와 향후 연구
-- 실제 영상 검증은 OpenPIV 예제 2종에 한정, double exposure는 실제 프레임 합성(A + r·B) → 실제 pulse-coded 촬영 필요
+- 실제 영상 검증은 OpenPIV 예제 2종 + PIV Challenge case C에 한정 (공개된 실제 pulse-coded double exposure 영상은 찾지 못함), double exposure는 실제 프레임 합성(A + r·B) → 실제 pulse-coded 촬영 필요
 - r → 1에서 여전히 성능 저하, multi-pass 후에도 큰 구배(> 4 px)에서 21 % outlier → 분리 후 PTV, 더 작은 최종 창
 - 불확도 정량화(UQ) 미구현
 - U-Net + 비선형 auto-corr 결합(앙상블)으로 군집 방향 오류 감소
