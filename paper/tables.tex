@@ -23,6 +23,10 @@ Dataset & $r$ & Nonlin.\ AC & AC$^\dagger$ & Ours & Nonlin.\ AC & AC$^\dagger$ &
 \multirow{3}{*}{\shortstack[l]{Real: test1\\($n=638$)}} & 0.9 & 35.9 & 5.5 & \textbf{8.3} & 13.9 & 0.5 & \textbf{6.1} & -- \\
  & 0.7 & 21.0 & 6.1 & \textbf{0.8} & 0.9 & 0.9 & \textbf{0.2} & -- \\
  & 0.5 & 28.4 & 11.3 & \textbf{0.2} & 2.4 & 1.6 & \textbf{0.0} & -- \\
+\midrule
+\multirow{3}{*}{\shortstack[l]{Real: case C\\($n=1559$)}} & 0.9 & 57.1 & 22.9 & \textbf{35.2} & 36.1 & 15.7 & \textbf{31.9} & -- \\
+ & 0.7 & 51.9 & 24.4 & \textbf{12.5} & 24.7 & 16.1 & \textbf{11.0} & -- \\
+ & 0.5 & 63.6 & 31.4 & \textbf{13.3} & 33.5 & 20.5 & \textbf{10.8} & -- \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -49,6 +53,10 @@ Dataset & $r$ & MP & MP+UOD & MP & MP+UOD \\
 \multirow{3}{*}{Real: test1} & 0.9 & 29.6 & 12.1 & 4.2 & 2.8 \\
  & 0.7 & 13.6 & 0.3 & 0.2 & 0.0 \\
  & 0.5 & 14.3 & 0.5 & 0.0 & 0.0 \\
+\midrule
+\multirow{3}{*}{Real: case C} & 0.9 & 34.7 & 15.8 & 16.9 & 16.0 \\
+ & 0.7 & 28.5 & 6.5 & 2.1 & 2.1 \\
+ & 0.5 & 31.6 & 9.4 & 2.9 & 2.6 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -65,6 +73,7 @@ Dataset & Nonlin.\ auto-corr. & Auto-corr.$^\dagger$ & U-Net + CC (ours) & True 
 Synthetic (ours) & 0.255 / 2.750 & 0.267 / 0.871 & 0.114 / 0.214 & 0.095 / 0.170 \\
 Synthetic (LML) & 0.647 / 4.195 & 0.982 / 2.821 & 0.184 / 0.363 & 0.031 / 0.048 \\
 Real: test1 & 0.295 / 4.392 & 0.229 / 1.212 & 0.193 / 0.528 & -- \\
+Real: case C & 1.605 / 10.461 & 0.277 / 3.227 & 0.178 / 2.336 & -- \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -89,6 +98,10 @@ Dataset & Method & SP & SP + UOD & MP & MP + UOD \\
 \multirow{3}{*}{Real: test1} & Nonlin.\ auto-corr. & 26.5 / 18.2 & 1.6 / 0.2 & 21.0 / 13.6 & 0.9 / 0.3 \\
  & Auto-corr.$^\dagger$ & 8.8 / 0.0 & 0.8 / 0.0 & 6.1 / 0.0 & 0.9 / 0.0 \\
  & U-Net + CC & 7.4 / 4.5 & 1.7 / 0.5 & 0.8 / 0.2 & 0.2 / 0.0 \\
+\midrule
+\multirow{3}{*}{Real: case C} & Nonlin.\ auto-corr. & 60.6 / 31.0 & 33.0 / 12.3 & 51.9 / 28.5 & 24.7 / 6.5 \\
+ & Auto-corr.$^\dagger$ & 30.4 / 0.0 & 17.4 / 0.2 & 24.4 / 0.0 & 16.1 / 0.2 \\
+ & U-Net + CC & 48.0 / 30.4 & 24.8 / 12.6 & 12.5 / 2.1 & 11.0 / 2.1 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -113,6 +126,10 @@ Dataset & $r$ & Zero-shot & Fine-tuned \\
 \multirow{3}{*}{Real: test1} & 0.9 & 23.4 / 17.1 & 6.1 / 2.8 \\
  & 0.7 & 2.5 / 1.7 & 0.2 / 0.0 \\
  & 0.5 & 0.2 / 0.0 & 0.0 / 0.0 \\
+\midrule
+\multirow{3}{*}{Real: case C} & 0.9 & 73.0 / 53.5 & 31.9 / 16.0 \\
+ & 0.7 & 19.1 / 5.8 & 11.0 / 2.1 \\
+ & 0.5 & 22.2 / 4.7 & 10.8 / 2.6 \\
 \bottomrule
 \end{tabular}
 \end{table}

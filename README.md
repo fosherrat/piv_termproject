@@ -397,7 +397,7 @@ plasma 장은 발산 0이 아니라 PINN(발산 0 stream-function 맞춤)의 가
 - 합성은 영상 단위 bootstrap 95 % 구간 제공
 - test1은 직사각형 격자 수정 후 **전체 영상**으로 재계산 (n = 638; 이전 결과는 왼쪽 368×368만 평가)
 - plasma(발산 0 아님, 비물리적 유동)는 제외, LML은 균일 병진만. LML은 시계 seed라 새로 생성한 샘플 (7단계와 다른 영상)
-- case C는 원본 데이터(`data/pivchallenge_C/`)가 이 환경에 없어 아직 미포함 → 데이터를 넣고 `python scripts/evaluate_paper.py --datasets caseC` 실행
+- case C는 배경 차감(bgsub) 영상, case C 마스크 안의 벡터만 평가 (n = 1559)
 
 outlier 비율 % (후처리 없음 / + UOD)
 
@@ -412,6 +412,9 @@ outlier 비율 % (후처리 없음 / + UOD)
 | 실제 test1 | 0.9 | 35.9 / 13.9 | 5.5 / 0.5 | **8.3 / 6.1** | – |
 | 실제 test1 | 0.7 | 21.0 / 0.9 | 6.1 / 0.9 | **0.8 / 0.2** | – |
 | 실제 test1 | 0.5 | 28.4 / 2.4 | 11.3 / 1.6 | **0.2 / 0.0** | – |
+| 실제 case C | 0.9 | 57.1 / 36.1 | 22.9 / 15.7 | 35.2 / 31.9 | – |
+| 실제 case C | 0.7 | 51.9 / 24.7 | 24.4 / 16.1 | **12.5 / 11.0** | – |
+| 실제 case C | 0.5 | 63.6 / 33.5 | 31.4 / 20.5 | **13.3 / 10.8** | – |
 
 LaTeX 표: `python scripts/make_tables_paper.py` → `paper/tables.tex` (주 표, 방향 오류, median/RMS, 처리 ablation, 모델 ablation)
 
@@ -421,7 +424,8 @@ LaTeX 표: `python scripts/make_tables_paper.py` → `paper/tables.tex` (주 표
 2. 그래도 제안 방법은 **후처리 없이** 모든 데이터·r에서 고전 기법보다 outlier가 적다 (합성 0.7–1.3 %, test1 r ≤ 0.7에서 ≤ 0.8 %).
    UOD 없이도 낮다는 점은 측정 자체가 정확하다는 뜻 (UOD가 데이터에 따라 득실이 갈리므로 중요).
 3. LML(입자 지름 ≈ 변위, 상 겹침)에서는 처리를 맞춰도 auto-correlation 계열이 실패(+UOD 15–72 %)하고 제안 방법은 ≤ 1.2 %.
-4. **제안 방법이 지는 경우**: test1 r 0.9 + UOD에서 부호 oracle AC가 0.5 %, 제안 6.1 %. 합성에서는 UOD 후 제안(1.7–2.0 %)과 oracle(3.2–4.3 %) 격차가 좁다.
+4. **제안 방법이 지는 경우**: r = 0.9에서는 부호 oracle AC가 더 낫다 (test1 + UOD 0.5 % vs 6.1 %, case C + UOD 15.7 % vs 31.9 %).
+   case C r ≤ 0.7에서는 제안이 oracle보다 outlier가 적다 (11 % vs 16–21 %, +UOD); 6단계의 "oracle 30–40 %"는 single-pass·후처리 없는 oracle과의 비교였다. 합성에서는 UOD 후 제안(1.7–2.0 %)과 oracle(3.2–4.3 %) 격차가 좁다.
    r → 1에서 분리 정보가 줄어드는 한계는 그대로다.
 5. median 오차는 제안 방법이 항상 작다 (합성 r 0.7: 0.11 vs AC 0.26–0.27 px): 분리 후 CC는 자기 상관 피크와 겹침이 없다.
 
