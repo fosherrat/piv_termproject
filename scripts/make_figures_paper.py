@@ -79,7 +79,7 @@ def fig_outliers(d):
         ax[i, 0].set_ylabel(f"outlier rate\n({lab})")
     h, l = ax[0, 0].get_legend_handles_labels()
     fig.legend(h, l, loc="lower center", ncol=4, bbox_to_anchor=(0.5, -0.06))
-    fig.savefig("paper/fig_outliers.pdf", bbox_inches="tight"); fig.savefig("paper/fig_outliers.png", dpi=150, bbox_inches="tight")
+    fig.savefig("paper/fig_outliers.pdf", bbox_inches="tight"); fig.savefig("paper/fig_outliers.png", dpi=220, bbox_inches="tight")
 
 
 def fig_dir_acc(d):
@@ -93,7 +93,7 @@ def fig_dir_acc(d):
     ax[0, 0].set_ylabel("direction-error rate\n(multi-pass)"); ax[1, 0].set_ylabel("median error [px]\n(multi-pass)")
     h, l = ax[1, 0].get_legend_handles_labels()
     fig.legend(h, l, loc="lower center", ncol=4, bbox_to_anchor=(0.5, -0.06))
-    fig.savefig("paper/fig_dir_acc.pdf", bbox_inches="tight"); fig.savefig("paper/fig_dir_acc.png", dpi=150, bbox_inches="tight")
+    fig.savefig("paper/fig_dir_acc.pdf", bbox_inches="tight"); fig.savefig("paper/fig_dir_acc.png", dpi=220, bbox_inches="tight")
 
 
 def fig_process(d, r=0.7):
@@ -113,7 +113,7 @@ def fig_process(d, r=0.7):
     ax[0].set_ylabel(f"outlier rate ($r={r}$)")
     h, l = ax[0].get_legend_handles_labels()
     fig.legend(h, l, loc="lower center", ncol=3, bbox_to_anchor=(0.5, -0.1))
-    fig.savefig("paper/fig_process.pdf", bbox_inches="tight"); fig.savefig("paper/fig_process.png", dpi=150, bbox_inches="tight")
+    fig.savefig("paper/fig_process.pdf", bbox_inches="tight"); fig.savefig("paper/fig_process.png", dpi=220, bbox_inches="tight")
 
 
 # ------------------------------------------------------------------ recomputed: vectors and CDF
@@ -188,7 +188,7 @@ def fig_vectors(ds, name, s, r=0.7):
         out = valid & (np.hypot(u - ru, v - rv) > 1)
         quiv(a, u, v, np.where(out[..., None], red, np.where(valid[..., None], white, grey)))
         a.set_title(f"{LAB[m].replace(' (ours)', '')}: {100 * out.sum() / valid.sum():.1f}%", fontsize=7.5)
-    fig.savefig(f"paper/fig_vec_{ds}.pdf"); fig.savefig(f"paper/fig_vec_{ds}.png", dpi=150)
+    fig.savefig(f"paper/fig_vec_{ds}.pdf"); fig.savefig(f"paper/fig_vec_{ds}.png", dpi=220)
     plt.close(fig)
 
 
@@ -208,7 +208,7 @@ def fig_cdf(ex):
     ax[0].set_ylabel("fraction of vectors\nwith error $\\leq |\\epsilon|$ ($r=0.7$)")
     h, l = ax[0].get_legend_handles_labels()
     fig.legend(h, l, loc="lower center", ncol=3, bbox_to_anchor=(0.5, -0.12))
-    fig.savefig("paper/fig_cdf.pdf", bbox_inches="tight"); fig.savefig("paper/fig_cdf.png", dpi=150, bbox_inches="tight")
+    fig.savefig("paper/fig_cdf.pdf", bbox_inches="tight"); fig.savefig("paper/fig_cdf.png", dpi=220, bbox_inches="tight")
 
 
 def main():
