@@ -94,6 +94,81 @@ def asym_auto_piv(I, win=32, step=16, mask_r=3, power=2):
     return cx, cy, out[:, 0].reshape(cx.shape), out[:, 1].reshape(cx.shape)
 
 
+def _peak_near(c, centre, rad, mask_r):
+    """Highest peak of c inside the disc |s - centre| <= rad, outside the centre disc |s| <= mask_r."""
+    w = c.shape[0]
+    yy, xx = np.mgrid[:w, :w] - w // 2
+    cc = c.copy()
+    cc[(xx - centre[0]) ** 2 + (yy - centre[1]) ** 2 > rad ** 2] = -np.inf
+    cc[xx ** 2 + yy ** 2 <= mask_r ** 2] = -np.inf
+    cc[[0, -1], :] = -np.inf
+    cc[:, [0, -1]] = -np.inf
+    if not np.isfinite(cc).any():
+        return centre[0], centre[1], -np.inf
+    i, j = np.unravel_index(np.argmax(cc), cc.shape)
+    di, dj = _subpix(c - c.min() + 1e-9, i, j)
+    return (j + dj - w // 2), (i + di - w // 2), cc[i, j]
+
+
+def multipass_auto_piv(I, mode="asym", passes=((64, 32), (32, 16), (32, 16)), mask_r=3,
+                       sign_ref=None, validate=True, smooth=1.0, power=2):
+    """Multi-pass auto-correlation of a double exposure, with the same pass schedule,
+    validation and smoothing as multipass_piv, so that the classical baselines get the same
+    hierarchical processing as the separated-frame cross-correlation.
+
+    A single double-exposure image cannot be deformed differently for the two exposures, so
+    the windows stay in place; the predictor p of the previous pass restricts the peak search
+    to discs of radius win/4 around +p and -p (the auto-correlation counterpart of the
+    one-quarter rule of multipass_piv).
+
+    mode "asym"  : nonlinear auto-correlation sum I^p(x) I(x+s); in every pass the higher of
+                   the two candidate peaks (+p, -p) gives the direction (pulse coding).
+    mode "oracle": plain auto-correlation; the direction is taken from sign_ref =
+                   (cx, cy, u, v) (the reference / true field) in every pass.  Idealised:
+                   magnitude accuracy of auto-correlation with a perfect sign.
+    """
+    H, W = I.shape
+    prev = None
+    for k, (win, step) in enumerate(passes):
+        sy, sx, cx, cy = window_grid((H, W), win, step)
+        w = _windows(I, sy, sx, win)
+        if mode == "asym":
+            w = np.clip(w - np.median(w, axis=(1, 2), keepdims=True), 0, None)
+            C = _corr(w ** power, w)
+        else:
+            w = w - w.mean((1, 2), keepdims=True)
+            C = _corr(w, w)
+        if sign_ref is not None:
+            su = _sample(sign_ref[2], sign_ref[0], sign_ref[1], cx, cy).ravel()
+            sv = _sample(sign_ref[3], sign_ref[0], sign_ref[1], cx, cy).ravel()
+        if prev is None:
+            pu = np.zeros(cx.size); pv = np.zeros(cx.size)
+        else:
+            gx, gy, gu, gv = prev
+            pu = _sample(gu, gx, gy, cx, cy).ravel(); pv = _sample(gv, gx, gy, cx, cy).ravel()
+        out = np.zeros((cx.size, 2))
+        for n, c in enumerate(C):
+            if prev is None:
+                du, dv, _ = _peak(c, mask_r)
+            else:
+                a = _peak_near(c, (pu[n], pv[n]), win / 4, mask_r)
+                b = _peak_near(c, (-pu[n], -pv[n]), win / 4, mask_r)
+                du, dv, _ = a if a[2] >= b[2] else b
+            if mode == "oracle" and du * su[n] + dv * sv[n] < 0:
+                du, dv = -du, -dv
+            out[n] = du, dv
+        u = out[:, 0].reshape(cx.shape); v = out[:, 1].reshape(cx.shape)
+        if k < len(passes) - 1:
+            from .postproc import uod_median
+            if validate:
+                u, v, _ = uod_median(u, v)
+            if smooth:
+                u = ndimage.gaussian_filter(u, smooth, mode="nearest")
+                v = ndimage.gaussian_filter(v, smooth, mode="nearest")
+        prev = (cx, cy, u, v)
+    return cx, cy, u, v
+
+
 # ----------------------------------------------------------------- multi-pass + deformation
 def _sample(field, cx, cy, x, y):
     """Bilinear interpolation of a grid field (centres cx, cy) at points x, y."""

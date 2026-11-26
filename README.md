@@ -30,6 +30,7 @@ U-Net이 한 장의 double exposure를 **frame A(1st pulse) / frame B(2nd pulse)
 | `scripts/evaluate_validation.py`, `scripts/make_figures_validation.py` | 5단계: 자동 마스크 + 검증 (임계값은 학습 쌍에서 선택) |
 | `scripts/evaluate_pivc.py`, `scripts/make_figures_pivc.py` | 6단계: PIV Challenge 2001 case C 외부 검증 |
 | `scripts/build_lml.sh`, `scripts/evaluate_lml.py`, `scripts/make_figures_lml.py` | 7단계: Lille LML 생성기로 독립 합성 검증 |
+| `scripts/evaluate_paper.py`, `scripts/make_tables_paper.py` | 8단계: 처리 조건을 통일한 논문용 비교 + LaTeX 표 |
 
 ## 실행
 ```bash
@@ -383,6 +384,46 @@ plasma 장은 발산 0이 아니라 PINN(발산 0 stream-function 맞춤)의 가
 - 3단계 test1에서 PINN이 median을 0.19 → 0.38 px로 키운 것과 대조: test1의 기준(실제 A,B CC)에는 작은 규모 구조·노이즈가 있어 평활화가 그것까지 지웠지만,
   균일 병진은 지울 구조가 없다. 즉 **PINN에 가장 유리한 조건**이라 PINN의 평활화 편향을 검증하는 시험은 아니다.
 - 남은 median 오차(0.16–0.31 px)는 분리·상관 단계의 오차이며 PINN으로 줄지 않는다 (r 0.5에서 특히).
+
+## 8단계 — 논문용 공정 비교 (처리 조건 통일)
+지금까지의 표는 방법마다 처리 조건이 달랐다: 고전 auto-correlation은 single-pass·후처리 없음, 제안 방법은 multi-pass + UOD.
+논문용으로 `scripts/evaluate_paper.py`에서 **모든 방법에 같은 처리**를 적용해 다시 평가했다.
+- 같은 double exposure 영상, 같은 pass 일정(64→32→32 px, 50 % overlap), pass 사이 같은 UOD + 평활, 같은 중심 마스크(3 px), 같은 sub-pixel 맞춤
+- auto-correlation도 multi-pass로 처리 (`multipass_auto_piv`): 한 장짜리 영상은 두 노출을 따로 변형할 수 없으므로 창은 고정하고,
+  이전 pass 예측값 ±p 주변 win/4 원 안에서만 피크 탐색 (multi-pass CC의 ¼ 규칙에 대응). 비선형 AC는 매 pass에서 +p/−p 중 큰 피크로 방향 결정
+- 최종 후처리는 "없음"과 "같은 UOD"를 **둘 다** 보고 (UOD는 합성 와류에서 정답 A/B도 0.1 → 1.6 %로 악화시키므로 한쪽만 보이면 불공정)
+- 평가 벡터는 기준값으로만 결정 (|d_ref| > 2 px, 실제 영상은 기준이 UOD 통과) → 모든 방법이 같은 벡터
+- U-Net 모델은 평가 전에 도메인별로 고정: 합성 → zero-shot, 실제 → fine-tuned (test1, case C는 학습에 쓰지 않음). 다른 모델 결과도 JSON에 저장
+- 합성은 영상 단위 bootstrap 95 % 구간 제공
+- test1은 직사각형 격자 수정 후 **전체 영상**으로 재계산 (n = 638; 이전 결과는 왼쪽 368×368만 평가)
+- plasma(발산 0 아님, 비물리적 유동)는 제외, LML은 균일 병진만. LML은 시계 seed라 새로 생성한 샘플 (7단계와 다른 영상)
+- case C는 원본 데이터(`data/pivchallenge_C/`)가 이 환경에 없어 아직 미포함 → 데이터를 넣고 `python scripts/evaluate_paper.py --datasets caseC` 실행
+
+outlier 비율 % (후처리 없음 / + UOD)
+
+| 데이터 | r | 비선형 AC | AC (부호 oracle) | **U-Net + CC** | 정답 A/B |
+|---|---|---|---|---|---|
+| 합성 (ours) | 0.9 | 18.8 / 7.0 | 3.3 / 3.2 | **1.3 / 2.0** | 0.1 |
+| 합성 (ours) | 0.7 | 8.6 / 3.9 | 4.1 / 3.3 | **0.9 / 1.9** | 0.1 |
+| 합성 (ours) | 0.5 | 13.8 / 4.7 | 8.5 / 4.3 | **0.7 / 1.7** | 0.1 |
+| 합성 (LML 병진) | 0.9 | 47.2 / 22.9 | 47.0 / 30.8 | **3.6 / 1.2** | 0.0 |
+| 합성 (LML 병진) | 0.7 | 35.1 / 14.9 | 49.7 / 32.1 | **0.5 / 0.0** | 0.0 |
+| 합성 (LML 병진) | 0.5 | 58.2 / 46.3 | 74.0 / 72.1 | **0.6 / 0.5** | 0.0 |
+| 실제 test1 | 0.9 | 35.9 / 13.9 | 5.5 / 0.5 | **8.3 / 6.1** | – |
+| 실제 test1 | 0.7 | 21.0 / 0.9 | 6.1 / 0.9 | **0.8 / 0.2** | – |
+| 실제 test1 | 0.5 | 28.4 / 2.4 | 11.3 / 1.6 | **0.2 / 0.0** | – |
+
+LaTeX 표: `python scripts/make_tables_paper.py` → `paper/tables.tex` (주 표, 방향 오류, median/RMS, 처리 ablation, 모델 ablation)
+
+### 관찰
+1. **처리를 맞추면 고전 기법과의 격차가 크게 줄어든다.** test1 r 0.7에서 비선형 AC는 single-pass 21 %였지만 multi-pass + UOD로 0.9 %.
+   이전 단계의 "고전 기법보다 수십 배 좋다"는 비교의 상당 부분은 처리 조건 차이였다.
+2. 그래도 제안 방법은 **후처리 없이** 모든 데이터·r에서 고전 기법보다 outlier가 적다 (합성 0.7–1.3 %, test1 r ≤ 0.7에서 ≤ 0.8 %).
+   UOD 없이도 낮다는 점은 측정 자체가 정확하다는 뜻 (UOD가 데이터에 따라 득실이 갈리므로 중요).
+3. LML(입자 지름 ≈ 변위, 상 겹침)에서는 처리를 맞춰도 auto-correlation 계열이 실패(+UOD 15–72 %)하고 제안 방법은 ≤ 1.2 %.
+4. **제안 방법이 지는 경우**: test1 r 0.9 + UOD에서 부호 oracle AC가 0.5 %, 제안 6.1 %. 합성에서는 UOD 후 제안(1.7–2.0 %)과 oracle(3.2–4.3 %) 격차가 좁다.
+   r → 1에서 분리 정보가 줄어드는 한계는 그대로다.
+5. median 오차는 제안 방법이 항상 작다 (합성 r 0.7: 0.11 vs AC 0.26–0.27 px): 분리 후 CC는 자기 상관 피크와 겹침이 없다.
 
 ## 선행 연구와의 관계
 - 방향 모호성과 pulse coding / image shifting: 1980년대 특허, Raffel et al., 강의 p.33–34
