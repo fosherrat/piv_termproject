@@ -5,3 +5,8 @@ data/
 results/eval_mp_*_log.txt
 results/pivc_fields.npz
 third_party/
+paper/*.aux
+paper/*.log
+paper/*.blg
+paper/*.bbl
+paper/*.out

@@ -1,0 +1,29 @@
+\begin{table}[t]
+\centering
+\caption{Direction-error rate (\%, $\mathbf{u}\cdot\mathbf{u}_\mathrm{ref}<0$), same processing as Table~\ref{tab:main}. The idealised auto-correlation has 0\,\% by construction.}
+\label{tab:direction}
+\small
+\begin{tabular}{llcccc}
+\toprule
+ & & \multicolumn{2}{c}{Nonlin.\ AC} & \multicolumn{2}{c}{Ours} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+Dataset & $r$ & MP & MP+UOD & MP & MP+UOD \\
+\midrule
+\multirow{3}{*}{Synthetic (ours)} & 0.9 & 15.5 & 1.9 & 0.2 & 0.0 \\
+ & 0.7 & 4.6 & 0.0 & 0.0 & 0.0 \\
+ & 0.5 & 5.8 & 0.0 & 0.0 & 0.0 \\
+\midrule
+\multirow{3}{*}{Synthetic (LML)} & 0.9 & 24.4 & 3.2 & 0.2 & 0.0 \\
+ & 0.7 & 11.7 & 0.5 & 0.0 & 0.0 \\
+ & 0.5 & 9.3 & 0.0 & 0.0 & 0.0 \\
+\midrule
+\multirow{3}{*}{Real: test1} & 0.9 & 29.6 & 12.1 & 4.2 & 2.8 \\
+ & 0.7 & 13.6 & 0.3 & 0.2 & 0.0 \\
+ & 0.5 & 14.3 & 0.5 & 0.0 & 0.0 \\
+\midrule
+\multirow{3}{*}{Real: case C} & 0.9 & 34.7 & 15.8 & 16.9 & 16.0 \\
+ & 0.7 & 28.5 & 6.5 & 2.1 & 2.1 \\
+ & 0.5 & 31.6 & 9.4 & 2.9 & 2.6 \\
+\bottomrule
+\end{tabular}
+\end{table}

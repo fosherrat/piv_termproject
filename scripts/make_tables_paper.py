@@ -35,7 +35,7 @@ def tab_main(d):
          r"method. Bold: best non-idealised method. $^\dagger$Direction supplied by the reference (idealised). "
          r"$^\ddagger$True separate frames (upper bound, synthetic only). Brackets: 95\,\% bootstrap interval "
          r"over images.}",
-         r"\label{tab:main}", r"\small", r"\begin{tabular}{llccccccc}", r"\toprule",
+         r"\label{tab:main}", r"\small", r"\resizebox{\textwidth}{!}{%", r"\begin{tabular}{llccccccc}", r"\toprule",
          r" & & \multicolumn{3}{c}{Multi-pass} & \multicolumn{3}{c}{Multi-pass + UOD} & \\",
          r"\cmidrule(lr){3-5}\cmidrule(lr){6-8}",
          r"Dataset & $r$ & Nonlin.\ AC & AC$^\dagger$ & Ours & Nonlin.\ AC & AC$^\dagger$ & Ours & True $A,B$$^\ddagger$ \\",
@@ -59,7 +59,7 @@ def tab_main(d):
         if rows:
             L.append(r"\midrule")
     L[-1] = r"\bottomrule"
-    L += [r"\end{tabular}", r"\end{table*}"]
+    L += [r"\end{tabular}}", r"\end{table*}"]
     return "\n".join(L)
 
 
@@ -155,6 +155,9 @@ def main():
            "% requires \\usepackage{booktabs,multirow}\n\n" +
            "\n\n".join([tab_main(d), tab_direction(d), tab_accuracy(d), tab_process(d), tab_model(d)]) + "\n")
     open(a.out, "w").write(txt)
+    for name, f in [("main", tab_main), ("direction", tab_direction), ("accuracy", tab_accuracy),
+                    ("process", tab_process), ("model", tab_model)]:
+        open(os.path.join(os.path.dirname(a.out), f"tab_{name}.tex"), "w").write(f(d) + "\n")
     print("saved", a.out)
 
 
