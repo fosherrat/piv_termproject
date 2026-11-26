@@ -6,6 +6,7 @@
 \usepackage[numbers,sort&compress]{natbib}
 \usepackage[hidelinks]{hyperref}
 \usepackage{xcolor}
+\usepackage{placeins}
 
 \newtheorem{proposition}{Proposition}
 \newtheorem{corollary}{Corollary}
@@ -158,7 +159,13 @@ With the same assumptions and $H_3(\s)=\sum_\x h^2(\x)h(\x+\s)$,
 C(\dd)-C(-\dd)\;\propto\;\sum_i a_ib_i\,(a_i-b_i).
 \label{eq:asym}
 \end{equation}
-This is also a weighted vote, but each pair contributes in proportion to its brightness difference, which vanishes as $r\to1$, while the correlation of unrelated particles (random peaks) does not. The decision margin relative to this background therefore scales with $1-r$, whereas in \eqref{eq:vote} a confidently classified pair contributes $|\Delta m_i|\approx1$ independent of $r$. In addition, the self-correlation peak of $C$ is centred at the origin and overlaps the displacement peaks when $|\dd|$ is comparable with the particle image diameter; separation removes the self peak up to the leakage terms.
+This is also a weighted vote, but each pair contributes in proportion to its brightness difference, which vanishes as $r\to1$, while the correlation of unrelated particles (random peaks) does not.
+For $\delta=0$, $b_i=ra_i$ and $C(\dd)/C(-\dd)=1/r$, so the normalised margin
+\begin{equation}
+\mu=\frac{C(\dd)-C(-\dd)}{|C(\dd)|+|C(-\dd)|}=\frac{1-r}{1+r}
+\label{eq:margin}
+\end{equation}
+is only 0.18 at $r=0.7$ and 0.05 at $r=0.9$, whereas for the separated frames with $|\Delta m_i|\to1$ the $-\dd$ peak of \eqref{eq:Rsep} vanishes and $\mu\to1$. The decision margin relative to this background therefore scales with $1-r$, whereas in \eqref{eq:vote} a confidently classified pair contributes $|\Delta m_i|\approx1$ independent of $r$. In addition, the self-correlation peak of $C$ is centred at the origin and overlaps the displacement peaks when $|\dd|$ is comparable with the particle image diameter; separation removes the self peak up to the leakage terms.
 
 \begin{figure}[t]
 \centering
@@ -174,7 +181,7 @@ This is also a weighted vote, but each pair contributes in proportion to its bri
 The input is the double exposure after subtraction of its median, $I'=\max(I-\operatorname{median}I,0)$.
 A U-Net \citep{ronneberger2015} with three down-sampling levels (24, 48, 96 and 192 channels; two $3\times3$ convolutions with batch normalisation and ReLU per level; max pooling; transposed convolutions; skip connections) outputs a sigmoid mask $m$, and $\hat A=mI'$, $\hat B=(1-m)I'$.
 The mask parametrisation conserves intensity, $\hat A+\hat B=I'$, so the network only decides where each part of the image belongs.
-It is fully convolutional and applied to images of any size.
+It is fully convolutional and applied to images of any size; its receptive field (about 100\,px; 68\,px at the bottleneck) covers many particle pairs, so the decision for one pair can use the displacement of its neighbours (Fig.~\ref{fig:unet}a and Section~\ref{sec:inside}).
 
 \paragraph{Loss.}
 The pixel target is $t=A/(A+B)$, the fraction of the intensity due to the first pulse.
@@ -256,50 +263,124 @@ The U-Net model is fixed per domain before evaluation: the synthetic-only model 
 % ======================================================================
 \section{Results}\label{sec:results}
 
+\subsection{Outlier rate}
 \input{tab_main}
 
-\paragraph{Outliers.}
-Table~\ref{tab:main} gives the outlier rates.
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_outliers.pdf}
+\caption{Outlier rate of Table~\ref{tab:main} per dataset and pulse ratio, multi-pass without (top) and with (bottom) UOD. Log scale; bars that are absent are 0. Error bars on the synthetic sets: 95\,\% bootstrap interval over images.}
+\label{fig:outliers}
+\end{figure}
+
+Table~\ref{tab:main} and Fig.~\ref{fig:outliers} give the outlier rates.
 Without post-processing the proposed method has the lowest outlier rate of the realisable methods in all twelve cases, and is close to the true-frame upper bound on synthetic images (0.7--1.3\,\% vs.\ 0.1\,\%).
 On the LML images the auto-correlation methods fail even with the true sign (47--74\,\%): the particle images are as large as the displacement, so the self-correlation peak overlaps the displacement peaks and the centre mask removes part of the signal, as discussed after \eqref{eq:asym}. The separated frames do not have this problem (0.5--3.6\,\%).
 On case C, where the flare and the high seeding density make all methods harder, the proposed method has 12.5\,\% outliers at $r=0.7$ against 51.9\,\% for the nonlinear auto-correlation and 24.4\,\% for the auto-correlation with the true sign.
 
 UOD changes the picture considerably for the auto-correlation methods, whose errors are mostly isolated sign reversals that UOD corrects (e.g.\ test1, $r=0.7$: 21.0\,\% $\to$ 0.9\,\%). After UOD the proposed method is still the best realisable method in all cases, but the margin over the nonlinear auto-correlation is smaller on test1 (0.2 vs.\ 0.9\,\% at $r=0.7$). On our synthetic flows UOD slightly increases the outlier rate of the proposed method and of the true frames, by rejecting valid vectors near vortices.
 
-\paragraph{Where the method does not win.}
-At $r=0.9$ the idealised auto-correlation is better on both real recordings (test1 after UOD: 0.5 vs.\ 6.1\,\%; case C: 15.7 vs.\ 31.9\,\%). This is the regime predicted by Corollary~\ref{cor:rstar} and Fig.~\ref{fig:theory}: a quarter of the pairs are reversed by out-of-plane motion and the vote \eqref{eq:vote} becomes unreliable when the window contains few effective pairs. The idealised baseline is told the sign, so this comparison bounds what separation must achieve rather than describing a competing practical method.
-
-\input{tab_direction}
-
-\paragraph{Direction errors.}
-Table~\ref{tab:direction} separates sign errors from magnitude errors.
-The proposed method has no direction errors on synthetic data except 0.2\,\% at $r=0.9$, and 0--4.2\,\% on test1. Its remaining case-C outliers at $r\le0.7$ are mostly magnitude errors near the blade, the flare and the shadow (direction errors 2.1--2.9\,\%, Fig.~\ref{fig:casec}).
-The nonlinear auto-correlation has 4.6--34.7\,\% direction errors before validation.
-Figure~\ref{fig:theory}b compares the measured direction error of the network on our synthetic images with the ideal pair vote of Proposition~\ref{prop:vote} for the same pair density (31 pairs per window): 5.7\,\% measured vs.\ 5.9\,\% predicted at $r=0.95$ and 0.22\,\% vs.\ 0.5\,\% at $r=0.9$.
-The network thus reaches the brightness-information limit of the pairs; further gains at weak coding require more pairs per window (larger windows, higher density) or information beyond brightness.
-
-\input{tab_accuracy}
-
-\paragraph{Accuracy.}
-The median error (Table~\ref{tab:accuracy}) of the proposed method is the lowest of the double-exposure methods on every dataset (synthetic: 0.11 vs.\ 0.26--0.27\,px), because the cross-correlation of separated frames has no self-correlation peak next to the displacement peak. On synthetic data it approaches the true frames (0.11 vs.\ 0.095\,px); on LML images the remaining gap (0.18 vs.\ 0.03\,px) reflects imperfect separation of overlapping pair images.
+Figures~\ref{fig:vec_synth}--\ref{fig:vec_casec} show one vector field per dataset at $r=0.7$, without post-processing. The outliers of the nonlinear auto-correlation are scattered sign reversals and random peaks; those of the auto-correlation with the true sign are magnitude errors, concentrated where particle images overlap (LML) or near walls and reflections (case C). The outliers of the proposed method on case C lie along the blade, in the shadow and at the flare, where the reference is also uncertain.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\textwidth]{fig_casec.pdf}
-\caption{Case C, $r=0.7$, every second vector shown. Left: reference from the real frames (grey: not evaluated). Middle and right: nonlinear auto-correlation and U-Net + CC, both multi-pass + UOD; red: outliers ($>1$\,px).}
-\label{fig:casec}
+\includegraphics[width=\textwidth]{fig_vec_synth.pdf}
+\caption{Synthetic (ours), $r=0.7$, first test image, multi-pass without post-processing. White: correct; red: outlier ($>1$\,px). Titles give the outlier rate of this image.}
+\label{fig:vec_synth}
+\end{figure}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_vec_lml.pdf}
+\caption{Synthetic (LML), $r=0.7$, first test image; particle images are as large as the displacement. Same layout as Fig.~\ref{fig:vec_synth}.}
+\label{fig:vec_lml}
+\end{figure}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_vec_test1.pdf}
+\caption{Real recording test1, $r=0.7$. Reference from the real frames; grey: not evaluated. Same layout as Fig.~\ref{fig:vec_synth}.}
+\label{fig:vec_test1}
+\end{figure}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_vec_caseC.pdf}
+\caption{PIV Challenge case C, $r=0.7$, every second vector shown; masked regions (blade, walls) in white, grey vectors not evaluated. Same colours as Fig.~\ref{fig:vec_synth}.}
+\label{fig:vec_casec}
 \end{figure}
 
+\paragraph{Where the method does not win.}
+At $r=0.9$ the idealised auto-correlation is better on both real recordings (test1 after UOD: 0.5 vs.\ 6.1\,\%; case C: 15.7 vs.\ 31.9\,\%). This is the regime predicted by Corollary~\ref{cor:rstar} and Fig.~\ref{fig:theory}: a quarter of the pairs are reversed by out-of-plane motion and the vote \eqref{eq:vote} becomes unreliable when the window contains few effective pairs. The idealised baseline is told the sign, so this comparison bounds what separation must achieve rather than describing a competing practical method.
+
+\subsection{Direction and accuracy}
+\input{tab_direction}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_dir_acc.pdf}
+\caption{Top: direction-error rate (log scale; absent bars are 0; the idealised auto-correlation is 0 by construction and not shown). Bottom: median error; values above the axis limit are printed in the bar. Multi-pass, no post-processing.}
+\label{fig:dir_acc}
+\end{figure}
+
+Table~\ref{tab:direction} and Fig.~\ref{fig:dir_acc} separate sign errors from magnitude errors.
+The proposed method has no direction errors on synthetic data except 0.2\,\% at $r=0.9$, and 0--4.2\,\% on test1. Its remaining case-C outliers at $r\le0.7$ are mostly magnitude errors near the blade, the flare and the shadow (direction errors 2.1--2.9\,\%, Fig.~\ref{fig:vec_casec}).
+The nonlinear auto-correlation has 4.6--34.7\,\% direction errors before validation.
+Figure~\ref{fig:theory}b compares the measured direction error of the network on our synthetic images with the ideal pair vote of Proposition~\ref{prop:vote} for the same pair density (31 pairs per window): 5.7\,\% measured vs.\ 5.9\,\% predicted at $r=0.95$ and 0.22\,\% vs.\ 0.5\,\% at $r=0.9$.
+The network is thus at the level of an ideal brightness-order classifier; further gains at weak coding require more pairs per window (larger windows, higher density) or information beyond brightness.
+
+\input{tab_accuracy}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_cdf.pdf}
+\caption{Cumulative distribution of the vector error at $r=0.7$ (multi-pass, no post-processing; all evaluated vectors). The dotted line is the outlier threshold.}
+\label{fig:cdf}
+\end{figure}
+
+The median error (Table~\ref{tab:accuracy}, Fig.~\ref{fig:dir_acc}) of the proposed method is the lowest of the double-exposure methods on every dataset (synthetic: 0.11 vs.\ 0.26--0.27\,px), because the cross-correlation of separated frames has no self-correlation peak next to the displacement peak. On synthetic data it approaches the true frames (0.11 vs.\ 0.095\,px); on LML images the remaining gap (0.18 vs.\ 0.03\,px) reflects imperfect separation of overlapping pair images.
+The error distributions (Fig.~\ref{fig:cdf}) show that the advantage is not limited to the tail: the whole distribution of the proposed method is shifted to smaller errors on the synthetic sets, and on the real recordings its bulk is similar to the auto-correlation with the true sign while its tail of large errors is much lighter.
+
+\subsection{Processing and fine-tuning}
 \input{tab_process}
 
-\paragraph{Effect of processing.}
-Table~\ref{tab:process} shows that the processing matters as much as the estimator. Multi-pass processing helps every method, most of all the separated frames on case C, where the displacement (about 11\,px) exceeds the quarter rule of a single $32$\,px pass (48.0\,\% $\to$ 12.5\,\%). An evaluation that compares the proposed method with multi-pass processing and post-processing against single-pass auto-correlation without post-processing (the usual way baselines are run) would overstate the gain several-fold: on test1 at $r=0.7$ the difference would be 26.5\,\% vs.\ 0.2\,\% instead of 0.9\,\% vs.\ 0.2\,\% after matching.
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_process.pdf}
+\caption{Outlier rate at $r=0.7$ for each processing stage (Table~\ref{tab:process}): single pass (SP) or multi-pass (MP), without or with UOD. Log scale; points at the bottom are 0.}
+\label{fig:process}
+\end{figure}
+
+Table~\ref{tab:process} and Fig.~\ref{fig:process} show that the processing matters as much as the estimator. Multi-pass processing helps every method, most of all the separated frames on case C, where the displacement (about 11\,px) exceeds the quarter rule of a single $32$\,px pass (48.0\,\% $\to$ 12.5\,\%). An evaluation that compares the proposed method with multi-pass processing and post-processing against single-pass auto-correlation without post-processing (the usual way baselines are run) would overstate the gain several-fold: on test1 at $r=0.7$ the difference would be 26.5\,\% vs.\ 0.2\,\% instead of 0.9\,\% vs.\ 0.2\,\% after matching.
 
 \input{tab_model}
 
-\paragraph{Fine-tuning.}
 Table~\ref{tab:model} compares the synthetic-only and the fine-tuned networks. On synthetic data both are equivalent. On the real recordings, neither of which was used for fine-tuning, self-supervised fine-tuning on another recording reduces the outliers substantially (case C, $r=0.7$: 19.1 $\to$ 11.0\,\%; test1, $r=0.9$: 23.4 $\to$ 6.1\,\%). Fine-tuning needs only double-frame recordings of a similar set-up, which are usually available.
 
+\subsection{What the network does}\label{sec:inside}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{fig_unet.pdf}
+\caption{Inside the separation. (a) Architecture: the U-Net outputs a soft mask $m$ that splits the double exposure into $\hat A$ and $\hat B$, which are evaluated by multi-pass cross-correlation. (b) A $80\times80$\,px crop of a synthetic image at $r=0.7$: input, mask on particle pixels ($m=1$: first exposure), separated frames and truth. (c) Correlation planes of one window (colour scale set outside the centre). (d) Probe images with all pairs sharing one brightness ratio $\rho=b_i/a_i$: weighted mean and interquartile range of the per-pair mask difference $\Delta m_i$; orange: pairs with reversed order ($\rho=1/0.7$) placed among a majority with $\rho=0.7$. (e) Distribution of the normalised direction margin per window, Eq.~\eqref{eq:margin}, on the 12 synthetic test images.}
+\label{fig:unet}
+\end{figure}
+
+Figure~\ref{fig:unet} relates the trained network to the analysis of Section~\ref{sec:theory}.
+In the example (b) the mask is close to 1 or 0 on most particle images and the separated frames resemble the truth, although individual particles are misassigned.
+In the correlation planes (c), the auto-correlation has equal peaks at $\pm\dd$, the nonlinear auto-correlation a slightly higher peak at $+\dd$, and the cross-correlation of the separated frames a single peak at $+\dd$ with no counterpart at $-\dd$.
+
+\paragraph{Pair decision.}
+To see what the network uses, we rendered probe images in which every pair has the same brightness ratio $\rho$ (light-sheet brightness variation, noise and a uniform displacement as in the test data) and measured $\Delta m_i$ at the two images of each pair (Fig.~\ref{fig:unet}d).
+The response is a step: $\Delta m_i\approx+0.75$ for every $\rho<1$, from $\rho=0.3$ to $0.85$, and $\approx-0.72$ for $\rho>1$; at $\rho=1$, where Proposition~\ref{prop:ambig} applies, it collapses to $+0.25$ with only 52--79\,\% of the pairs on either side.
+The network therefore decides by the \emph{order} of the brightness in a pair, not by its ratio, and casts a vote of nearly constant size whatever $r$ is, which is the property that distinguishes \eqref{eq:vote} from the nonlinear auto-correlation \eqref{eq:asym}.
+
+\paragraph{Context.}
+When 20\,\% of the pairs are reversed ($\rho=1/0.7$) among pairs with $\rho=0.7$, the reversed pairs still receive $\Delta m_i=+0.53$ on average and 92--96\,\% of them are assigned correctly, whereas the same ratio gives $-0.72$ when all pairs share it.
+The network thus corrects isolated reversed pairs from the displacement of their neighbours, i.e.\ it uses the pair context that brightness thresholding cannot (Section~\ref{sec:theory}).
+This correction is limited to isolated reversals: when a large fraction of pairs is reversed, as for $r\ge0.9$, the majority itself becomes uncertain, consistent with the measured direction errors following the ideal-vote prediction (Fig.~\ref{fig:theory}b).
+
+\paragraph{Margin.}
+The normalised margin \eqref{eq:margin} per window (Fig.~\ref{fig:unet}e) has a median of 0.14 for the nonlinear auto-correlation at $r=0.7$ and 0.04 at $r=0.9$, close to the values 0.18 and 0.05 predicted by $(1-r)/(1+r)$, and is negative in 2.2\,\% and 14\,\% of the windows. For the separated frames the median margin is 1 at both ratios (the $-\dd$ peak is absent), and it is negative in 0\,\% and 2.0\,\% of the windows.
+
+\FloatBarrier
 % ======================================================================
 \section{Discussion}
 
