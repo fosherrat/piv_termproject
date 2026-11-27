@@ -1,3 +1,102 @@
+synth r=0.9 (n=2691):
+   gt                     out 0.001 sgn 0.000 med 0.095 rms 0.170
+   asym                   out 0.188 sgn 0.155 med 0.293 rms 4.437
+   oracle                 out 0.033 sgn 0.000 med 0.256 rms 0.739
+   unet:zeroshot          out 0.013 sgn 0.002 med 0.123 rms 0.627
+   unet:finetuned         out 0.016 sgn 0.001 med 0.120 rms 0.579
+   gt+uod                 out 0.016 sgn 0.000 med 0.099 rms 0.277
+   asym+uod               out 0.070 sgn 0.019 med 0.267 rms 1.547
+   oracle+uod             out 0.032 sgn 0.000 med 0.257 rms 0.435
+   asym_sp+uod            out 0.063 sgn 0.016 med 0.267 rms 1.375
+   oracle_sp+uod          out 0.033 sgn 0.000 med 0.258 rms 0.436
+   unet:zeroshot+uod      out 0.020 sgn 0.000 med 0.128 rms 0.305
+   unet_sp:zeroshot+uod   out 0.039 sgn 0.010 med 0.175 rms 1.461
+   unet:finetuned+uod     out 0.023 sgn 0.000 med 0.126 rms 0.365
+   unet_sp:finetuned+uod  out 0.038 sgn 0.010 med 0.166 rms 1.628
+   (13s)
+synth r=0.7 (n=2691):
+   gt                     out 0.001 sgn 0.000 med 0.095 rms 0.170
+   asym                   out 0.086 sgn 0.046 med 0.255 rms 2.750
+   oracle                 out 0.041 sgn 0.000 med 0.267 rms 0.871
+   unet:zeroshot          out 0.009 sgn 0.000 med 0.114 rms 0.214
+   unet:finetuned         out 0.008 sgn 0.000 med 0.112 rms 0.209
+   gt+uod                 out 0.016 sgn 0.000 med 0.099 rms 0.277
+   asym+uod               out 0.039 sgn 0.000 med 0.247 rms 0.442
+   oracle+uod             out 0.033 sgn 0.000 med 0.269 rms 0.446
+   asym_sp+uod            out 0.040 sgn 0.000 med 0.247 rms 0.445
+   oracle_sp+uod          out 0.035 sgn 0.000 med 0.267 rms 0.451
+   unet:zeroshot+uod      out 0.019 sgn 0.000 med 0.120 rms 0.291
+   unet_sp:zeroshot+uod   out 0.023 sgn 0.000 med 0.163 rms 0.345
+   unet:finetuned+uod     out 0.017 sgn 0.000 med 0.118 rms 0.294
+   unet_sp:finetuned+uod  out 0.024 sgn 0.000 med 0.159 rms 0.344
+   (11s)
+synth r=0.5 (n=2691):
+   gt                     out 0.001 sgn 0.000 med 0.095 rms 0.170
+   asym                   out 0.138 sgn 0.058 med 0.289 rms 3.410
+   oracle                 out 0.085 sgn 0.000 med 0.312 rms 1.500
+   unet:zeroshot          out 0.007 sgn 0.000 med 0.118 rms 0.208
+   unet:finetuned         out 0.007 sgn 0.000 med 0.117 rms 0.219
+   gt+uod                 out 0.016 sgn 0.000 med 0.099 rms 0.277
+   asym+uod               out 0.047 sgn 0.000 med 0.269 rms 0.499
+   oracle+uod             out 0.043 sgn 0.000 med 0.300 rms 0.482
+   asym_sp+uod            out 0.052 sgn 0.003 med 0.273 rms 1.123
+   oracle_sp+uod          out 0.046 sgn 0.000 med 0.304 rms 0.577
+   unet:zeroshot+uod      out 0.017 sgn 0.000 med 0.124 rms 0.293
+   unet_sp:zeroshot+uod   out 0.024 sgn 0.000 med 0.166 rms 0.349
+   unet:finetuned+uod     out 0.018 sgn 0.000 med 0.123 rms 0.294
+   unet_sp:finetuned+uod  out 0.025 sgn 0.000 med 0.163 rms 0.353
+   (11s)
+generated translation 0.9 0.01
+generated translation 0.7 0.01
+generated translation 0.5 0.01
+lml r=0.9 (n=2700):
+   gt                     out 0.000 sgn 0.000 med 0.027 rms 0.046
+   asym                   out 0.490 sgn 0.252 med 0.956 rms 6.050
+   oracle                 out 0.462 sgn 0.000 med 0.835 rms 2.679
+   unet:zeroshot          out 0.037 sgn 0.001 med 0.246 rms 0.777
+   unet:finetuned         out 0.049 sgn 0.000 med 0.235 rms 0.773
+   gt+uod                 out 0.000 sgn 0.000 med 0.027 rms 0.043
+   asym+uod               out 0.245 sgn 0.036 med 0.446 rms 2.268
+   oracle+uod             out 0.277 sgn 0.000 med 0.475 rms 1.290
+   asym_sp+uod            out 0.253 sgn 0.043 med 0.449 rms 2.453
+   oracle_sp+uod          out 0.291 sgn 0.000 med 0.489 rms 1.345
+   unet:zeroshot+uod      out 0.013 sgn 0.000 med 0.237 rms 0.355
+   unet_sp:zeroshot+uod   out 0.046 sgn 0.004 med 0.368 rms 0.828
+   unet:finetuned+uod     out 0.017 sgn 0.000 med 0.223 rms 0.372
+   unet_sp:finetuned+uod  out 0.085 sgn 0.003 med 0.326 rms 1.081
+   (10s)
+lml r=0.7 (n=2700):
+   gt                     out 0.000 sgn 0.000 med 0.030 rms 0.050
+   asym                   out 0.367 sgn 0.113 med 0.676 rms 4.072
+   oracle                 out 0.500 sgn 0.000 med 1.002 rms 2.794
+   unet:zeroshot          out 0.006 sgn 0.000 med 0.186 rms 0.372
+   unet:finetuned         out 0.011 sgn 0.000 med 0.186 rms 0.397
+   gt+uod                 out 0.000 sgn 0.000 med 0.030 rms 0.048
+   asym+uod               out 0.158 sgn 0.004 med 0.412 rms 1.059
+   oracle+uod             out 0.321 sgn 0.000 med 0.556 rms 1.656
+   asym_sp+uod            out 0.162 sgn 0.003 med 0.419 rms 1.065
+   oracle_sp+uod          out 0.338 sgn 0.000 med 0.574 rms 1.709
+   unet:zeroshot+uod      out 0.001 sgn 0.000 med 0.184 rms 0.263
+   unet_sp:zeroshot+uod   out 0.017 sgn 0.000 med 0.343 rms 0.518
+   unet:finetuned+uod     out 0.006 sgn 0.000 med 0.185 rms 0.300
+   unet_sp:finetuned+uod  out 0.029 sgn 0.000 med 0.341 rms 0.520
+   (11s)
+lml r=0.5 (n=2700):
+   gt                     out 0.000 sgn 0.000 med 0.038 rms 0.056
+   asym                   out 0.582 sgn 0.103 med 1.232 rms 3.839
+   oracle                 out 0.737 sgn 0.000 med 1.796 rms 2.815
+   unet:zeroshot          out 0.007 sgn 0.000 med 0.302 rms 0.397
+   unet:finetuned         out 0.018 sgn 0.000 med 0.308 rms 0.447
+   gt+uod                 out 0.000 sgn 0.000 med 0.038 rms 0.053
+   asym+uod               out 0.481 sgn 0.010 med 0.948 rms 1.806
+   oracle+uod             out 0.735 sgn 0.000 med 1.750 rms 2.160
+   asym_sp+uod            out 0.505 sgn 0.014 med 1.008 rms 1.964
+   oracle_sp+uod          out 0.741 sgn 0.000 med 1.741 rms 2.140
+   unet:zeroshot+uod      out 0.003 sgn 0.000 med 0.299 rms 0.380
+   unet_sp:zeroshot+uod   out 0.036 sgn 0.000 med 0.467 rms 0.559
+   unet:finetuned+uod     out 0.010 sgn 0.000 med 0.304 rms 0.409
+   unet_sp:finetuned+uod  out 0.071 sgn 0.000 med 0.467 rms 0.615
+   (11s)
 test1 r=0.9 (n=638):
    asym                   out 0.359 sgn 0.296 med 0.387 rms 5.828
    oracle                 out 0.055 sgn 0.000 med 0.221 rms 1.120
@@ -40,103 +139,88 @@ test1 r=0.5 (n=638):
    unet:finetuned+uod     out 0.000 sgn 0.000 med 0.185 rms 0.270
    unet_sp:finetuned+uod  out 0.011 sgn 0.000 med 0.218 rms 0.334
    (2s)
-synth r=0.9 (n=2691):
-   gt                     out 0.001 sgn 0.000 med 0.095 rms 0.170
-   asym                   out 0.188 sgn 0.155 med 0.293 rms 4.437
-   oracle                 out 0.033 sgn 0.000 med 0.256 rms 0.739
-   unet:zeroshot          out 0.013 sgn 0.002 med 0.123 rms 0.627
-   unet:finetuned         out 0.016 sgn 0.001 med 0.120 rms 0.579
-   gt+uod                 out 0.016 sgn 0.000 med 0.099 rms 0.277
-   asym+uod               out 0.070 sgn 0.019 med 0.267 rms 1.547
-   oracle+uod             out 0.032 sgn 0.000 med 0.257 rms 0.435
-   asym_sp+uod            out 0.063 sgn 0.016 med 0.267 rms 1.375
-   oracle_sp+uod          out 0.033 sgn 0.000 med 0.258 rms 0.436
-   unet:zeroshot+uod      out 0.020 sgn 0.000 med 0.128 rms 0.305
-   unet_sp:zeroshot+uod   out 0.039 sgn 0.010 med 0.175 rms 1.461
-   unet:finetuned+uod     out 0.023 sgn 0.000 med 0.126 rms 0.365
-   unet_sp:finetuned+uod  out 0.038 sgn 0.010 med 0.166 rms 1.628
-   (9s)
-synth r=0.7 (n=2691):
-   gt                     out 0.001 sgn 0.000 med 0.095 rms 0.170
-   asym                   out 0.086 sgn 0.046 med 0.255 rms 2.750
-   oracle                 out 0.041 sgn 0.000 med 0.267 rms 0.871
-   unet:zeroshot          out 0.009 sgn 0.000 med 0.114 rms 0.214
-   unet:finetuned         out 0.008 sgn 0.000 med 0.112 rms 0.209
-   gt+uod                 out 0.016 sgn 0.000 med 0.099 rms 0.277
-   asym+uod               out 0.039 sgn 0.000 med 0.247 rms 0.442
-   oracle+uod             out 0.033 sgn 0.000 med 0.269 rms 0.446
-   asym_sp+uod            out 0.040 sgn 0.000 med 0.247 rms 0.445
-   oracle_sp+uod          out 0.035 sgn 0.000 med 0.267 rms 0.451
-   unet:zeroshot+uod      out 0.019 sgn 0.000 med 0.120 rms 0.291
-   unet_sp:zeroshot+uod   out 0.023 sgn 0.000 med 0.163 rms 0.345
-   unet:finetuned+uod     out 0.017 sgn 0.000 med 0.118 rms 0.294
-   unet_sp:finetuned+uod  out 0.024 sgn 0.000 med 0.159 rms 0.344
-   (8s)
-synth r=0.5 (n=2691):
-   gt                     out 0.001 sgn 0.000 med 0.095 rms 0.170
-   asym                   out 0.138 sgn 0.058 med 0.289 rms 3.410
-   oracle                 out 0.085 sgn 0.000 med 0.312 rms 1.500
-   unet:zeroshot          out 0.007 sgn 0.000 med 0.118 rms 0.208
-   unet:finetuned         out 0.007 sgn 0.000 med 0.117 rms 0.219
-   gt+uod                 out 0.016 sgn 0.000 med 0.099 rms 0.277
-   asym+uod               out 0.047 sgn 0.000 med 0.269 rms 0.499
-   oracle+uod             out 0.043 sgn 0.000 med 0.300 rms 0.482
-   asym_sp+uod            out 0.052 sgn 0.003 med 0.273 rms 1.123
-   oracle_sp+uod          out 0.046 sgn 0.000 med 0.304 rms 0.577
-   unet:zeroshot+uod      out 0.017 sgn 0.000 med 0.124 rms 0.293
-   unet_sp:zeroshot+uod   out 0.024 sgn 0.000 med 0.166 rms 0.349
-   unet:finetuned+uod     out 0.018 sgn 0.000 med 0.123 rms 0.294
-   unet_sp:finetuned+uod  out 0.025 sgn 0.000 med 0.163 rms 0.353
-   (9s)
-generated translation 0.9 0.01
-generated translation 0.7 0.01
-generated translation 0.5 0.01
-lml r=0.9 (n=2700):
-   gt                     out 0.000 sgn 0.000 med 0.025 rms 0.044
-   asym                   out 0.472 sgn 0.244 med 0.862 rms 5.993
-   oracle                 out 0.470 sgn 0.000 med 0.862 rms 2.749
-   unet:zeroshot          out 0.036 sgn 0.002 med 0.259 rms 0.817
-   unet:finetuned         out 0.051 sgn 0.001 med 0.243 rms 0.741
-   gt+uod                 out 0.000 sgn 0.000 med 0.025 rms 0.042
-   asym+uod               out 0.229 sgn 0.032 med 0.451 rms 2.241
-   oracle+uod             out 0.308 sgn 0.000 med 0.501 rms 1.451
-   asym_sp+uod            out 0.252 sgn 0.036 med 0.462 rms 2.523
-   oracle_sp+uod          out 0.304 sgn 0.000 med 0.508 rms 1.552
-   unet:zeroshot+uod      out 0.012 sgn 0.000 med 0.250 rms 0.384
-   unet_sp:zeroshot+uod   out 0.053 sgn 0.009 med 0.400 rms 1.302
-   unet:finetuned+uod     out 0.022 sgn 0.000 med 0.232 rms 0.388
-   unet_sp:finetuned+uod  out 0.065 sgn 0.000 med 0.359 rms 0.785
-   (8s)
-lml r=0.7 (n=2700):
-   gt                     out 0.000 sgn 0.000 med 0.031 rms 0.048
-   asym                   out 0.351 sgn 0.117 med 0.647 rms 4.195
-   oracle                 out 0.497 sgn 0.000 med 0.982 rms 2.821
-   unet:zeroshot          out 0.005 sgn 0.000 med 0.184 rms 0.363
-   unet:finetuned         out 0.009 sgn 0.000 med 0.181 rms 0.383
-   gt+uod                 out 0.000 sgn 0.000 med 0.031 rms 0.047
-   asym+uod               out 0.149 sgn 0.005 med 0.428 rms 1.158
-   oracle+uod             out 0.321 sgn 0.000 med 0.528 rms 1.623
-   asym_sp+uod            out 0.160 sgn 0.009 med 0.433 rms 1.341
-   oracle_sp+uod          out 0.338 sgn 0.000 med 0.550 rms 1.659
-   unet:zeroshot+uod      out 0.000 sgn 0.000 med 0.182 rms 0.256
-   unet_sp:zeroshot+uod   out 0.009 sgn 0.000 med 0.333 rms 0.430
-   unet:finetuned+uod     out 0.000 sgn 0.000 med 0.180 rms 0.279
-   unet_sp:finetuned+uod  out 0.020 sgn 0.000 med 0.334 rms 0.465
-   (8s)
-lml r=0.5 (n=2700):
-   gt                     out 0.000 sgn 0.000 med 0.037 rms 0.055
-   asym                   out 0.582 sgn 0.093 med 1.255 rms 3.969
-   oracle                 out 0.740 sgn 0.000 med 1.826 rms 2.899
-   unet:zeroshot          out 0.006 sgn 0.000 med 0.279 rms 0.377
-   unet:finetuned         out 0.016 sgn 0.000 med 0.297 rms 0.423
-   gt+uod                 out 0.000 sgn 0.000 med 0.037 rms 0.054
-   asym+uod               out 0.463 sgn 0.000 med 0.841 rms 1.313
-   oracle+uod             out 0.721 sgn 0.000 med 1.764 rms 2.050
-   asym_sp+uod            out 0.493 sgn 0.003 med 0.974 rms 1.544
-   oracle_sp+uod          out 0.730 sgn 0.000 med 1.766 rms 2.102
-   unet:zeroshot+uod      out 0.005 sgn 0.000 med 0.280 rms 0.369
-   unet_sp:zeroshot+uod   out 0.033 sgn 0.000 med 0.462 rms 0.547
-   unet:finetuned+uod     out 0.011 sgn 0.000 med 0.297 rms 0.406
-   unet_sp:finetuned+uod  out 0.066 sgn 0.000 med 0.456 rms 0.591
-   (8s)
+test2 r=0.9 (n=10185):
+   asym                   out 0.603 sgn 0.354 med 4.775 rms 9.636
+   oracle                 out 0.222 sgn 0.000 med 0.328 rms 2.651
+   unet:zeroshot          out 0.468 sgn 0.312 med 0.677 rms 9.521
+   unet:finetuned         out 0.294 sgn 0.181 med 0.271 rms 7.768
+   asym+uod               out 0.361 sgn 0.176 med 0.449 rms 6.031
+   oracle+uod             out 0.096 sgn 0.001 med 0.276 rms 1.247
+   asym_sp+uod            out 0.443 sgn 0.200 med 0.615 rms 6.925
+   oracle_sp+uod          out 0.112 sgn 0.002 med 0.279 rms 1.574
+   unet:zeroshot+uod      out 0.428 sgn 0.307 med 0.513 rms 9.387
+   unet_sp:zeroshot+uod   out 0.522 sgn 0.359 med 1.381 rms 9.300
+   unet:finetuned+uod     out 0.267 sgn 0.176 med 0.261 rms 7.594
+   unet_sp:finetuned+uod  out 0.320 sgn 0.202 med 0.349 rms 6.929
+   (43s)
+test2 r=0.7 (n=10185):
+   asym                   out 0.657 sgn 0.345 med 5.497 rms 9.651
+   oracle                 out 0.289 sgn 0.000 med 0.393 rms 3.045
+   unet:zeroshot          out 0.439 sgn 0.266 med 0.549 rms 8.883
+   unet:finetuned         out 0.233 sgn 0.090 med 0.261 rms 6.199
+   asym+uod               out 0.387 sgn 0.143 med 0.528 rms 5.214
+   oracle+uod             out 0.113 sgn 0.001 med 0.297 rms 1.326
+   asym_sp+uod            out 0.528 sgn 0.205 med 1.434 rms 7.149
+   oracle_sp+uod          out 0.134 sgn 0.001 med 0.299 rms 1.907
+   unet:zeroshot+uod      out 0.382 sgn 0.258 med 0.430 rms 8.646
+   unet_sp:zeroshot+uod   out 0.533 sgn 0.329 med 1.541 rms 8.791
+   unet:finetuned+uod     out 0.177 sgn 0.080 med 0.246 rms 5.856
+   unet_sp:finetuned+uod  out 0.311 sgn 0.154 med 0.370 rms 6.130
+   (44s)
+test2 r=0.5 (n=10185):
+   asym                   out 0.779 sgn 0.390 med 7.214 rms 10.323
+   oracle                 out 0.439 sgn 0.000 med 0.669 rms 3.822
+   unet:zeroshot          out 0.524 sgn 0.274 med 1.429 rms 8.952
+   unet:finetuned         out 0.292 sgn 0.055 med 0.329 rms 5.723
+   asym+uod               out 0.595 sgn 0.217 med 2.300 rms 6.613
+   oracle+uod             out 0.163 sgn 0.001 med 0.353 rms 1.693
+   asym_sp+uod            out 0.739 sgn 0.291 med 5.877 rms 8.806
+   oracle_sp+uod          out 0.227 sgn 0.001 med 0.383 rms 2.621
+   unet:zeroshot+uod      out 0.434 sgn 0.267 med 0.590 rms 8.529
+   unet_sp:zeroshot+uod   out 0.637 sgn 0.339 med 4.502 rms 8.726
+   unet:finetuned+uod     out 0.172 sgn 0.048 med 0.281 rms 5.094
+   unet_sp:finetuned+uod  out 0.444 sgn 0.188 med 0.652 rms 6.780
+   (45s)
+caseC r=0.9 (n=1559):
+   asym                   out 0.571 sgn 0.347 med 4.261 rms 11.520
+   oracle                 out 0.229 sgn 0.000 med 0.270 rms 3.116
+   unet:zeroshot          out 0.750 sgn 0.536 med 10.745 rms 13.828
+   unet:finetuned         out 0.352 sgn 0.169 med 0.355 rms 7.848
+   asym+uod               out 0.361 sgn 0.158 med 0.367 rms 7.360
+   oracle+uod             out 0.157 sgn 0.002 med 0.247 rms 2.426
+   asym_sp+uod            out 0.416 sgn 0.214 med 0.432 rms 8.562
+   oracle_sp+uod          out 0.162 sgn 0.001 med 0.240 rms 2.493
+   unet:zeroshot+uod      out 0.730 sgn 0.535 med 10.644 rms 13.811
+   unet_sp:zeroshot+uod   out 0.709 sgn 0.484 med 9.855 rms 13.139
+   unet:finetuned+uod     out 0.319 sgn 0.160 med 0.313 rms 7.603
+   unet_sp:finetuned+uod  out 0.513 sgn 0.370 med 1.186 rms 11.860
+   (7s)
+caseC r=0.7 (n=1559):
+   asym                   out 0.519 sgn 0.285 med 1.605 rms 10.461
+   oracle                 out 0.244 sgn 0.000 med 0.277 rms 3.227
+   unet:zeroshot          out 0.225 sgn 0.058 med 0.224 rms 3.640
+   unet:finetuned         out 0.125 sgn 0.021 med 0.178 rms 2.336
+   asym+uod               out 0.247 sgn 0.065 med 0.293 rms 4.175
+   oracle+uod             out 0.161 sgn 0.002 med 0.246 rms 2.441
+   asym_sp+uod            out 0.330 sgn 0.123 med 0.340 rms 6.143
+   oracle_sp+uod          out 0.174 sgn 0.002 med 0.248 rms 2.529
+   unet:zeroshot+uod      out 0.191 sgn 0.058 med 0.222 rms 3.333
+   unet_sp:zeroshot+uod   out 0.493 sgn 0.210 med 0.885 rms 8.247
+   unet:finetuned+uod     out 0.110 sgn 0.021 med 0.177 rms 2.060
+   unet_sp:finetuned+uod  out 0.248 sgn 0.126 med 0.272 rms 5.835
+   (7s)
+caseC r=0.5 (n=1559):
+   asym                   out 0.636 sgn 0.316 med 5.206 rms 10.965
+   oracle                 out 0.314 sgn 0.000 med 0.334 rms 3.578
+   unet:zeroshot          out 0.241 sgn 0.054 med 0.231 rms 3.698
+   unet:finetuned         out 0.133 sgn 0.029 med 0.187 rms 2.570
+   asym+uod               out 0.335 sgn 0.094 med 0.384 rms 4.610
+   oracle+uod             out 0.205 sgn 0.002 med 0.271 rms 2.635
+   asym_sp+uod            out 0.477 sgn 0.168 med 0.755 rms 7.166
+   oracle_sp+uod          out 0.211 sgn 0.001 med 0.276 rms 2.737
+   unet:zeroshot+uod      out 0.222 sgn 0.047 med 0.229 rms 3.436
+   unet_sp:zeroshot+uod   out 0.432 sgn 0.142 med 0.508 rms 6.335
+   unet:finetuned+uod     out 0.108 sgn 0.026 med 0.186 rms 2.235
+   unet_sp:finetuned+uod  out 0.228 sgn 0.087 med 0.266 rms 4.788
+   (7s)
 saved results/eval_paper.json
