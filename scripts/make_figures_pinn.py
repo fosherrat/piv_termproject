@@ -6,7 +6,8 @@
   res_pinn_vort.png      RMS vorticity error, same layout
   res_pinn_diag.png      why: (a) outliers PINN fixes vs creates, (b) clustering of the outliers
                          it receives, (c) 2-D divergence of the reference field
-  res_pinn_map_<ds>.png  r = 0.7 maps: reference over its 2-D divergence, MP + UOD, + PINN
+  res_pinn_map_<ds>.png  r = 0.7, first test image/pair (same rule for every dataset): reference,
+                         MP + UOD, MP + UOD + PINN, MP + PINN (no UOD), 2-D divergence of the reference
 
 Stage colours (validated categorical slots): MP blue (= "ours" in the other figures),
 MP + UOD green, + PINN magenta; hatching = PINN without UOD.
@@ -172,10 +173,11 @@ def maps():
         u, v = multipass_piv(sA, sB, mask_r=EP.MASK_R)[2:]
         uu, vu = uod_median(u, v)[:2]
         pu, pv = pinn_fit(cx, cy, uu, vu, steps=P.STEPS, fit_mask=fm)
-        draw_map(ds, I, ref, valid, M, (uu, vu), (pu, pv))
+        qu, qv = pinn_fit(cx, cy, u, v, steps=P.STEPS, fit_mask=fm)
+        draw_map(ds, I, ref, valid, M, (uu, vu), (pu, pv), (qu, qv))
 
 
-def draw_map(ds, I, ref, valid, M, f_uod, f_pinn):
+def draw_map(ds, I, ref, valid, M, f_uod, f_pinn, f_pinn_raw):
     import matplotlib.colors as mc
     cx, cy, ru, rv = ref
     ys, xs = S.CROP[ds]
@@ -188,8 +190,8 @@ def draw_map(ds, I, ref, valid, M, f_uod, f_pinn):
     sub = np.zeros_like(sel); sub[np.ix_(rows[::step], cols[::step])] = True; sub &= sel
     spacing = (cx[0, 1] - cx[0, 0]) * step
     mag = np.nanmedian(np.hypot(ru, rv)[valid]); scale = mag / (0.8 * spacing)
-    h = S.W / 4 + 0.32
-    fig, ax = plt.subplots(1, 4, figsize=(S.W, h))
+    h = S.W / 5 + 0.32
+    fig, ax = plt.subplots(1, 5, figsize=(S.W, h))
     fig.subplots_adjust(left=0.003, right=0.997, top=1 - 0.32 / h, bottom=0.01, wspace=0.03)
     rgba = {k: np.array(mc.to_rgba(c)) for k, c in (("r", S.RED), ("w", S.WHITE), ("g", S.GREY))}
     vmax = 2.5 * np.nanpercentile(img, 99.5)
@@ -202,23 +204,25 @@ def draw_map(ds, I, ref, valid, M, f_uod, f_pinn):
         a.set_xticks([]); a.set_yticks([]); a.set_facecolor("#d9d9d9")
         for sp in a.spines.values():
             sp.set_visible(False)
-    for a in ax[:3]:
+    for a in ax[:4]:
         a.imshow(img, cmap="gray", vmin=0, vmax=vmax, extent=(-0.5, x1 - x0 - 0.5, y1 - y0 - 0.5, -0.5))
     quiv(ax[0], ru, rv, np.zeros_like(valid))
-    ax[0].set_title("reference" + (" (true)" if ds == "synth" else " (real A, B)"))
-    for a, (k, (u, v)) in zip(ax[1:3], [("mp+uod", f_uod), ("mp+uod+pinn", f_pinn)]):
+    ax[0].set_title("reference" + (" (true)" if ds == "synth" else " (real A, B)"), fontsize=10.5)
+    short = {"mp+uod": "MP + UOD", "mp+uod+pinn": "+ PINN", "mp+pinn": "PINN, no UOD"}
+    for a, (k, (u, v)) in zip(ax[1:4], [("mp+uod", f_uod), ("mp+uod+pinn", f_pinn), ("mp+pinn", f_pinn_raw)]):
         out = valid & (np.hypot(u - ru, v - rv) > 1)
         quiv(a, u, v, out)
-        a.set_title(f"{SL[k]}: {100 * out.sum() / valid.sum():.1f}%", color=SC[k] if k != "mp+uod+pinn" else "#c2417a")
+        a.set_title(f"{short[k]}: {100 * out.sum() / valid.sum():.1f}%", color=SC[k] if k == "mp+uod" else "#c2417a",
+                    fontsize=10.5)
     # 2-D divergence of the reference, normalised by rms |grad u|
     g = [np.gradient(np.nan_to_num(f), S_H, axis=ax_) for f in (ru, rv) for ax_ in (1, 0)]
     div = g[0] + g[3]; gn = np.sqrt(np.mean(sum(x ** 2 for x in g)[valid]))
     dn = np.where(valid, div / max(gn, 1e-12), np.nan)
     ext = (cx[0, 0] - S_H / 2 - x0, cx[0, -1] + S_H / 2 - x0, cy[-1, 0] + S_H / 2 - y0, cy[0, 0] - S_H / 2 - y0)
-    im = ax[3].imshow(dn, cmap="RdBu_r", vmin=-1.5, vmax=1.5, extent=ext, interpolation="nearest")
-    ax[3].set_xlim(-0.5, x1 - x0 - 0.5); ax[3].set_ylim(y1 - y0 - 0.5, -0.5)
-    ax[3].set_title("reference ∇·u / rms|∇u|")
-    cax = ax[3].inset_axes([0.06, 0.05, 0.4, 0.045])
+    im = ax[4].imshow(dn, cmap="RdBu_r", vmin=-1.5, vmax=1.5, extent=ext, interpolation="nearest")
+    ax[4].set_xlim(-0.5, x1 - x0 - 0.5); ax[4].set_ylim(y1 - y0 - 0.5, -0.5)
+    ax[4].set_title("reference ∇·u / rms|∇u|", fontsize=10.5)
+    cax = ax[4].inset_axes([0.06, 0.05, 0.5, 0.05])
     cb = fig.colorbar(im, cax=cax, orientation="horizontal", ticks=[-1.5, 0, 1.5])
     cb.ax.tick_params(labelsize=7.5, colors=S.INK, length=2, pad=1)
     cax.set_facecolor("white")
