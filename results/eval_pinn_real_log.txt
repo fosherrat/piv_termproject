@@ -1,0 +1,58 @@
+test1 r=0.9 (51s) n=638
+   mp           out 0.083 sgn 0.042 med 0.211 rms 2.083 vort 0.0653
+   mp+uod       out 0.061 sgn 0.028 med 0.211 rms 1.627 vort 0.0521
+   mp+uod+pinn  out 0.034 sgn 0.000 med 0.384 rms 0.499 vort 0.0162
+   clusters(mp+uod) {'n_out': 39, 'share_ge5': 0.8974358974358975, 'largest': 35, 'fixed': 29, 'new': 12, 'n_valid': 638}
+   div {'reference': {'div_rms': 0.012649962367473207, 'grad_rms': 0.024621438805372795, 'ratio': 0.5137783566374188}}
+test1 r=0.7 (102s) n=638
+   mp           out 0.008 sgn 0.002 med 0.193 rms 0.528 vort 0.0159
+   mp+uod       out 0.002 sgn 0.000 med 0.196 rms 0.267 vort 0.0101
+   mp+uod+pinn  out 0.016 sgn 0.000 med 0.382 rms 0.474 vort 0.0153
+   mp+pinn      out 0.019 sgn 0.000 med 0.393 rms 0.477 vort 0.0154
+   clusters(mp+uod) {'n_out': 1, 'share_ge5': 0.0, 'largest': 1, 'fixed': 0, 'new': 9, 'n_valid': 638}
+   div {'reference': {'div_rms': 0.012649962367473207, 'grad_rms': 0.024621438805372795, 'ratio': 0.5137783566374188}}
+test1 r=0.5 (50s) n=638
+   mp           out 0.002 sgn 0.000 med 0.183 rms 0.362 vort 0.0099
+   mp+uod       out 0.000 sgn 0.000 med 0.185 rms 0.270 vort 0.0104
+   mp+uod+pinn  out 0.016 sgn 0.000 med 0.386 rms 0.477 vort 0.0155
+   clusters(mp+uod) {'n_out': 0, 'share_ge5': 0.0, 'largest': 0, 'fixed': 0, 'new': 10, 'n_valid': 638}
+   div {'reference': {'div_rms': 0.012649962367473207, 'grad_rms': 0.024621438805372795, 'ratio': 0.5137783566374188}}
+test2 r=0.9 (234s) n=10185
+   mp           out 0.294 sgn 0.181 med 0.271 rms 7.768 vort 0.1157
+   mp+uod       out 0.267 sgn 0.176 med 0.261 rms 7.594 vort 0.0893
+   mp+uod+pinn  out 0.462 sgn 0.030 med 0.842 rms 3.660 vort 0.0538
+   clusters(mp+uod) {'n_out': 2723, 'share_ge5': 0.9562982005141388, 'largest': 753, 'fixed': 246, 'new': 2226, 'n_valid': 10185}
+   div {'reference': {'div_rms': 0.022108140844237623, 'grad_rms': 0.04037279119210083, 'ratio': 0.5483034972573789}}
+test2 r=0.7 (428s) n=10185
+   mp           out 0.233 sgn 0.090 med 0.261 rms 6.199 vort 0.1222
+   mp+uod       out 0.177 sgn 0.080 med 0.246 rms 5.856 vort 0.0866
+   mp+uod+pinn  out 0.341 sgn 0.022 med 0.489 rms 3.030 vort 0.0523
+   mp+pinn      out 0.349 sgn 0.023 med 0.505 rms 2.985 vort 0.0524
+   clusters(mp+uod) {'n_out': 1803, 'share_ge5': 0.9179145867997781, 'largest': 286, 'fixed': 284, 'new': 1950, 'n_valid': 10185}
+   div {'reference': {'div_rms': 0.022108140844237623, 'grad_rms': 0.04037279119210083, 'ratio': 0.5483034972573789}}
+test2 r=0.5 (224s) n=10185
+   mp           out 0.292 sgn 0.055 med 0.329 rms 5.723 vort 0.1437
+   mp+uod       out 0.172 sgn 0.048 med 0.281 rms 5.094 vort 0.0880
+   mp+uod+pinn  out 0.292 sgn 0.014 med 0.405 rms 2.564 vort 0.0517
+   clusters(mp+uod) {'n_out': 1754, 'share_ge5': 0.9389965792474344, 'largest': 266, 'fixed': 334, 'new': 1551, 'n_valid': 10185}
+   div {'reference': {'div_rms': 0.022108140844237623, 'grad_rms': 0.04037279119210083, 'ratio': 0.5483034972573789}}
+caseC r=0.9 (57s) n=1559
+   mp           out 0.352 sgn 0.169 med 0.355 rms 7.848 vort 0.1439
+   mp+uod       out 0.319 sgn 0.160 med 0.313 rms 7.603 vort 0.1257
+   mp+uod+pinn  out 0.556 sgn 0.077 med 1.283 rms 5.229 vort 0.0769
+   clusters(mp+uod) {'n_out': 497, 'share_ge5': 0.9778672032193159, 'largest': 216, 'fixed': 26, 'new': 396, 'n_valid': 1559}
+   div {'reference': {'div_rms': 0.0265836633309017, 'grad_rms': 0.04239463222639253, 'ratio': 0.6270525756407481}}
+caseC r=0.7 (89s) n=1559
+   mp           out 0.125 sgn 0.021 med 0.178 rms 2.336 vort 0.0835
+   mp+uod       out 0.110 sgn 0.021 med 0.177 rms 2.060 vort 0.0656
+   mp+uod+pinn  out 0.244 sgn 0.007 med 0.323 rms 1.919 vort 0.0637
+   mp+pinn      out 0.251 sgn 0.007 med 0.318 rms 1.922 vort 0.0637
+   clusters(mp+uod) {'n_out': 171, 'share_ge5': 0.9239766081871345, 'largest': 92, 'fixed': 14, 'new': 224, 'n_valid': 1559}
+   div {'reference': {'div_rms': 0.0265836633309017, 'grad_rms': 0.04239463222639253, 'ratio': 0.6270525756407481}}
+caseC r=0.5 (43s) n=1559
+   mp           out 0.133 sgn 0.029 med 0.187 rms 2.570 vort 0.0849
+   mp+uod       out 0.108 sgn 0.026 med 0.186 rms 2.235 vort 0.0662
+   mp+uod+pinn  out 0.268 sgn 0.007 med 0.318 rms 1.962 vort 0.0636
+   clusters(mp+uod) {'n_out': 168, 'share_ge5': 0.9285714285714286, 'largest': 93, 'fixed': 6, 'new': 256, 'n_valid': 1559}
+   div {'reference': {'div_rms': 0.0265836633309017, 'grad_rms': 0.04239463222639253, 'ratio': 0.6270525756407481}}
+saved results/eval_pinn_real.json

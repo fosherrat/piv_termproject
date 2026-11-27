@@ -1,0 +1,8 @@
+synth r=0.7 (1141s) n=2691
+   mp           out 0.009 sgn 0.000 med 0.114 rms 0.214 vort 0.0119
+   mp+uod       out 0.019 sgn 0.000 med 0.120 rms 0.291 vort 0.0115
+   mp+uod+pinn  out 0.011 sgn 0.000 med 0.117 rms 0.259 vort 0.0120
+   mp+pinn      out 0.001 sgn 0.000 med 0.105 rms 0.181 vort 0.0090
+   clusters(mp+uod) {'n_out': 50, 'share_ge5': 0.5, 'largest': 8, 'fixed': 22, 'new': 1, 'n_valid': 2691}
+   div {'true': {'div_rms': 0.0015917309130393895, 'grad_rms': 0.0609198721431969, 'ratio': 0.02612827074386995}, 'cc_true_frames': {'div_rms': 0.004771098969569361, 'grad_rms': 0.06411506787194221, 'ratio': 0.07441462869693492}}
+saved results/eval_pinn_synth_a.json

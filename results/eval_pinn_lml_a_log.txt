@@ -1,0 +1,8 @@
+lml r=0.7 (1204s) n=2700
+   mp           out 0.006 sgn 0.000 med 0.186 rms 0.372 vort 0.0109
+   mp+uod       out 0.001 sgn 0.000 med 0.184 rms 0.263 vort 0.0069
+   mp+uod+pinn  out 0.000 sgn 0.000 med 0.168 rms 0.227 vort 0.0051
+   mp+pinn      out 0.003 sgn 0.000 med 0.173 rms 0.262 vort 0.0060
+   clusters(mp+uod) {'n_out': 2, 'share_ge5': 0.0, 'largest': 1, 'fixed': 1, 'new': 0, 'n_valid': 2700}
+   div {'true': {'div_rms': 6.273996197580026e-06, 'grad_rms': 8.641422947955127e-06, 'ratio': 0.7260373939994084}, 'cc_true_frames': {'div_rms': 0.0020234454405636433, 'grad_rms': 0.002536250284227538, 'ratio': 0.7978098428010314}}
+saved results/eval_pinn_lml_a.json

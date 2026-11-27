@@ -1,0 +1,94 @@
+{
+ "_meta": {
+  "main_model": {
+   "synth": "zeroshot",
+   "lml": "zeroshot",
+   "test1": "finetuned",
+   "test2": "finetuned",
+   "caseC": "finetuned"
+  },
+  "pinn_steps": 800,
+  "grid_px": 16,
+  "input": "U-Net split -> multi-pass CC (same as evaluate_paper.py)"
+ },
+ "lml/r0.9": {
+  "mp": {
+   "n": 2700,
+   "outlier": 0.037037037037037035,
+   "sign_err": 0.0014814814814814814,
+   "median": 0.24618927067637633,
+   "rms": 0.7766049584333375,
+   "vort_rms": 0.028402035225314485
+  },
+  "mp+uod": {
+   "n": 2700,
+   "outlier": 0.012592592592592593,
+   "sign_err": 0.0,
+   "median": 0.23654224613043526,
+   "rms": 0.35486328625245583,
+   "vort_rms": 0.009597341716933806
+  },
+  "mp+uod+pinn": {
+   "n": 2700,
+   "outlier": 0.001851851851851852,
+   "sign_err": 0.0,
+   "median": 0.21419906737468342,
+   "rms": 0.30681364642111364,
+   "vort_rms": 0.0069634734885930085
+  },
+  "_clusters_mp+uod": {
+   "n_out": 34,
+   "share_ge5": 0.7058823529411765,
+   "largest": 24,
+   "fixed": 32,
+   "new": 3,
+   "n_valid": 2700
+  }
+ },
+ "lml/_div": {
+  "true": {
+   "div_rms": 7.090481990403395e-06,
+   "grad_rms": 9.374266021035519e-06,
+   "ratio": 0.7563772965790181
+  },
+  "cc_true_frames": {
+   "div_rms": 0.0017263318034401274,
+   "grad_rms": 0.002321659986090136,
+   "ratio": 0.7435764986187363
+  }
+ },
+ "lml/r0.5": {
+  "mp": {
+   "n": 2700,
+   "outlier": 0.007407407407407408,
+   "sign_err": 0.0,
+   "median": 0.3022833701559066,
+   "rms": 0.39671890687881484,
+   "vort_rms": 0.0092582141403338
+  },
+  "mp+uod": {
+   "n": 2700,
+   "outlier": 0.0025925925925925925,
+   "sign_err": 0.0,
+   "median": 0.29941254977977694,
+   "rms": 0.3798276965306265,
+   "vort_rms": 0.008447612808827271
+  },
+  "mp+uod+pinn": {
+   "n": 2700,
+   "outlier": 0.0,
+   "sign_err": 0.0,
+   "median": 0.31639847712037406,
+   "rms": 0.3475096604282483,
+   "vort_rms": 0.005807006173039407
+  },
+  "_clusters_mp+uod": {
+   "n_out": 7,
+   "share_ge5": 0.0,
+   "largest": 3,
+   "fixed": 7,
+   "new": 0,
+   "n_valid": 2700
+  }
+ }
+}

@@ -1,0 +1,13 @@
+synth r=0.9 (617s) n=2691
+   mp           out 0.013 sgn 0.002 med 0.123 rms 0.627 vort 0.0262
+   mp+uod       out 0.020 sgn 0.000 med 0.128 rms 0.305 vort 0.0124
+   mp+uod+pinn  out 0.011 sgn 0.000 med 0.119 rms 0.268 vort 0.0125
+   clusters(mp+uod) {'n_out': 54, 'share_ge5': 0.24074074074074073, 'largest': 7, 'fixed': 25, 'new': 1, 'n_valid': 2691}
+   div {'true': {'div_rms': 0.0015917309130393895, 'grad_rms': 0.0609198721431969, 'ratio': 0.02612827074386995}, 'cc_true_frames': {'div_rms': 0.00477109951989438, 'grad_rms': 0.06411506835813276, 'ratio': 0.07441463671603782}}
+synth r=0.5 (591s) n=2691
+   mp           out 0.007 sgn 0.000 med 0.118 rms 0.208 vort 0.0126
+   mp+uod       out 0.017 sgn 0.000 med 0.124 rms 0.293 vort 0.0119
+   mp+uod+pinn  out 0.011 sgn 0.000 med 0.118 rms 0.263 vort 0.0122
+   clusters(mp+uod) {'n_out': 46, 'share_ge5': 0.10869565217391304, 'largest': 5, 'fixed': 16, 'new': 0, 'n_valid': 2691}
+   div {'true': {'div_rms': 0.0015917309130393895, 'grad_rms': 0.0609198721431969, 'ratio': 0.02612827074386995}, 'cc_true_frames': {'div_rms': 0.00477109951989438, 'grad_rms': 0.06411506835813276, 'ratio': 0.07441463671603782}}
+saved results/eval_pinn_synth_b.json

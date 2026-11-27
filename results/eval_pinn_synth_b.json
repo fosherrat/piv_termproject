@@ -1,0 +1,94 @@
+{
+ "_meta": {
+  "main_model": {
+   "synth": "zeroshot",
+   "lml": "zeroshot",
+   "test1": "finetuned",
+   "test2": "finetuned",
+   "caseC": "finetuned"
+  },
+  "pinn_steps": 800,
+  "grid_px": 16,
+  "input": "U-Net split -> multi-pass CC (same as evaluate_paper.py)"
+ },
+ "synth/r0.9": {
+  "mp": {
+   "n": 2691,
+   "outlier": 0.013377926421404682,
+   "sign_err": 0.0018580453363062058,
+   "median": 0.12310825413523357,
+   "rms": 0.6270159343400905,
+   "vort_rms": 0.02616465461466821
+  },
+  "mp+uod": {
+   "n": 2691,
+   "outlier": 0.020066889632107024,
+   "sign_err": 0.0,
+   "median": 0.12779044210863508,
+   "rms": 0.3051532597604808,
+   "vort_rms": 0.012383075913444945
+  },
+  "mp+uod+pinn": {
+   "n": 2691,
+   "outlier": 0.011148272017837236,
+   "sign_err": 0.0,
+   "median": 0.1185294220006042,
+   "rms": 0.2680405034474538,
+   "vort_rms": 0.012510298016061284
+  },
+  "_clusters_mp+uod": {
+   "n_out": 54,
+   "share_ge5": 0.24074074074074073,
+   "largest": 7,
+   "fixed": 25,
+   "new": 1,
+   "n_valid": 2691
+  }
+ },
+ "synth/_div": {
+  "true": {
+   "div_rms": 0.0015917309130393895,
+   "grad_rms": 0.0609198721431969,
+   "ratio": 0.02612827074386995
+  },
+  "cc_true_frames": {
+   "div_rms": 0.00477109951989438,
+   "grad_rms": 0.06411506835813276,
+   "ratio": 0.07441463671603782
+  }
+ },
+ "synth/r0.5": {
+  "mp": {
+   "n": 2691,
+   "outlier": 0.007432181345224823,
+   "sign_err": 0.0,
+   "median": 0.11767600533116651,
+   "rms": 0.20817429308372692,
+   "vort_rms": 0.012620821305402118
+  },
+  "mp+uod": {
+   "n": 2691,
+   "outlier": 0.017094017094017096,
+   "sign_err": 0.0,
+   "median": 0.12395559820899202,
+   "rms": 0.2930371739694936,
+   "vort_rms": 0.011901405195716256
+  },
+  "mp+uod+pinn": {
+   "n": 2691,
+   "outlier": 0.011148272017837236,
+   "sign_err": 0.0,
+   "median": 0.11761608653505419,
+   "rms": 0.26280813347835197,
+   "vort_rms": 0.012198507650415365
+  },
+  "_clusters_mp+uod": {
+   "n_out": 46,
+   "share_ge5": 0.10869565217391304,
+   "largest": 5,
+   "fixed": 16,
+   "new": 0,
+   "n_valid": 2691
+  }
+ }
+}

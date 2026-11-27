@@ -1,0 +1,68 @@
+{
+ "_meta": {
+  "main_model": {
+   "synth": "zeroshot",
+   "lml": "zeroshot",
+   "test1": "finetuned",
+   "test2": "finetuned",
+   "caseC": "finetuned"
+  },
+  "pinn_steps": 800,
+  "grid_px": 16,
+  "input": "U-Net split -> multi-pass CC (same as evaluate_paper.py)"
+ },
+ "synth/r0.7": {
+  "mp": {
+   "n": 2691,
+   "outlier": 0.008918617614269788,
+   "sign_err": 0.0,
+   "median": 0.11350520366168203,
+   "rms": 0.21389930786867925,
+   "vort_rms": 0.011871703406116797
+  },
+  "mp+uod": {
+   "n": 2691,
+   "outlier": 0.01858045336306206,
+   "sign_err": 0.0,
+   "median": 0.11992117098685022,
+   "rms": 0.2912349424978891,
+   "vort_rms": 0.01148504297682966
+  },
+  "mp+uod+pinn": {
+   "n": 2691,
+   "outlier": 0.010776662950575994,
+   "sign_err": 0.0,
+   "median": 0.11700985966269441,
+   "rms": 0.2587920946048958,
+   "vort_rms": 0.012031048720404246
+  },
+  "mp+pinn": {
+   "n": 2691,
+   "outlier": 0.0007432181345224824,
+   "sign_err": 0.0,
+   "median": 0.10496124181577281,
+   "rms": 0.1809170674725102,
+   "vort_rms": 0.009033703760188966
+  },
+  "_clusters_mp+uod": {
+   "n_out": 50,
+   "share_ge5": 0.5,
+   "largest": 8,
+   "fixed": 22,
+   "new": 1,
+   "n_valid": 2691
+  }
+ },
+ "synth/_div": {
+  "true": {
+   "div_rms": 0.0015917309130393895,
+   "grad_rms": 0.0609198721431969,
+   "ratio": 0.02612827074386995
+  },
+  "cc_true_frames": {
+   "div_rms": 0.004771098969569361,
+   "grad_rms": 0.06411506787194221,
+   "ratio": 0.07441462869693492
+  }
+ }
+}

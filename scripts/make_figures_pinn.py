@@ -56,6 +56,8 @@ def stage_bars(ax, d, ds, metric, log=True, label=("mp+uod+pinn",), clip=None, f
                             color="white", rotation=90, fontweight="bold", zorder=3)
         if k in label:
             for xi, yi, ypi in zip(x[ok], y[ok], yp[ok]):
+                if clip is not None and yi > clip:
+                    continue
                 txt = S.fmt_pct(yi) if log else (fmt or "{:.2f}").format(yi)
                 ty = ypi * 1.35 if log else ypi + ax.get_ylim()[1] * 0.02
                 ax.text(xi, ty, txt, ha="center", va="bottom", fontsize=8, color=S.INK, zorder=4,
@@ -63,9 +65,14 @@ def stage_bars(ax, d, ds, metric, log=True, label=("mp+uod+pinn",), clip=None, f
     S.r_ticks(ax, rows)
 
 
-def fig_stage(d, metric, name, ylabel, log=True, tops=None, fmt=None):
+def fig_stage(d, metric, name, ylabel, log=True, tops=None, fmt=None, scale=1.0):
     h = 2.9
+    if scale != 1.0:
+        d = {k: ({m: (dict(v, **{metric: v[metric] * scale}) if isinstance(v, dict) and metric in v else v)
+                  for m, v in t.items()} if isinstance(t, dict) else t) for k, t in d.items()}
     fig, ax = S.panels(h, sharey=log)
+    if not log:
+        fig.subplots_adjust(wspace=0.32)
     for a, (ds, title) in zip(ax, S.DS):
         if log:
             S.pct_axis(a)
@@ -96,13 +103,13 @@ def fig_diag(d, r=0.7):
         fx, nw = 100 * c["fixed"] / c["n_valid"], 100 * c["new"] / c["n_valid"]
         a.bar(i, fx, 0.6, color=SC["mp+uod+pinn"], zorder=2)
         a.bar(i, -nw, 0.6, color="white", edgecolor=SC["mp+uod+pinn"], hatch="///", linewidth=1, zorder=2)
-        a.text(i, fx + 0.3, f"+{fx:.1f}", va="bottom", **lab)
-        a.text(i, -nw - 0.3, f"−{nw:.1f}", va="top", **lab)
+        a.text(i, fx + 0.3, f"+{fx:.1f}" if fx >= 0.05 else "0", va="bottom", **lab)
+        a.text(i, -nw - 0.3, f"−{nw:.1f}" if nw >= 0.05 else "0", va="top", **lab)
     a.axhline(0, color=S.INK2, lw=0.8)
     lim = max(abs(np.array(a.get_ylim()))) * 1.35
     a.set_ylim(-lim, lim)
     a.set_ylabel("% of evaluated vectors")
-    a.set_title("(a) PINN fixes (+) / creates (−) outliers", fontsize=10)
+    a.set_title("(a) outliers fixed (+) / created (−)", fontsize=9.5)
     # (b) clusters
     b = ax[1]
     for i, (ds, _) in enumerate(S.DS):
@@ -111,23 +118,23 @@ def fig_diag(d, r=0.7):
         b.text(i, c["share_ge5"] + 0.02, f"{100 * c['share_ge5']:.0f}%", va="bottom", **lab)
     b.set_ylim(0, 1.15); b.set_yticks([0, 0.5, 1]); b.set_yticklabels(["0", "50%", "100%"])
     b.set_ylabel("outliers in clusters ≥ 5")
-    b.set_title("(b) clustered MP + UOD outliers", fontsize=10)
-    # (c) divergence ratio
+    b.set_title("(b) outliers in clusters (MP + UOD)", fontsize=9.5)
+    # (c) absolute 2-D divergence of the reference (measured fields) vs the exact synthetic field
     c_ = ax[2]
     for i, (ds, _) in enumerate(S.DS):
         g = d.get(f"{ds}/_div", {})
         meas = g.get("cc_true_frames", g.get("reference"))
         if meas:
-            c_.bar(i, meas["ratio"], 0.6, color=S.COL["gt"], zorder=2)
-            c_.text(i, meas["ratio"] + 0.015, f"{meas['ratio']:.2f}", va="bottom", **lab)
+            c_.bar(i, meas["div_rms"], 0.6, color=S.COL["gt"], zorder=2)
+            c_.text(i, meas["div_rms"] + 0.0006, f"{meas['div_rms']:.3f}", va="bottom", **lab)
         if "true" in g:
-            c_.plot([i - 0.36, i + 0.36], [g["true"]["ratio"]] * 2, color=S.INK, lw=2.2, zorder=3)
-    c_.set_ylim(0, 1.0)
-    c_.set_ylabel("rms(∇·u) / rms(|∇u|)")
-    c_.set_title("(c) 2-D divergence of reference", fontsize=10)
+            c_.plot([i - 0.36, i + 0.36], [g["true"]["div_rms"]] * 2, color=S.INK, lw=2.2, zorder=3)
+    c_.set_ylim(0, 0.034)
+    c_.set_ylabel("rms(∇·u) [1/Δt]")
+    c_.set_title("(c) 2-D divergence of reference", fontsize=9.5)
     from matplotlib.lines import Line2D
     from matplotlib.patches import Patch
-    c_.legend([Patch(color=S.COL["gt"]), Line2D([], [], color=S.INK, lw=2.2)], ["measured (CC of frames)", "exact (synthetic)"],
+    c_.legend([Patch(color=S.COL["gt"]), Line2D([], [], color=S.INK, lw=2.2)], ["measured (CC of the frames)", "exact (synthetic)"],
               loc="upper left", fontsize=7.5, handlelength=1.2)
     for a_ in ax:
         a_.set_xticks(x); a_.set_xticklabels(names, fontsize=8.5); a_.tick_params(axis="x", length=0)
@@ -239,9 +246,10 @@ def main():
     fig_stage(d, "outlier", "res_pinn_outlier.png", "outlier rate")
     fig_stage(d, "median", "res_pinn_median.png", "median error [px]", log=False,
               tops={"synth": 0.4, "lml": 0.6, "test1": 0.6, "test2": 0.6, "caseC": 0.6})
-    tops = {ds: 1.15 * max(d[f"{ds}/r{r}"][k]["vort_rms"] for r in S.R for k in ("mp+uod", "mp+uod+pinn"))
+    tops = {ds: 1.2e3 * max(d[f"{ds}/r{r}"][k]["vort_rms"] for r in S.R for k in ("mp+uod", "mp+uod+pinn"))
             for ds, _ in S.DS}
-    fig_stage(d, "vort_rms", "res_pinn_vort.png", "RMS vorticity error [1/Δt]", log=False, tops=tops, fmt="{:.3f}")
+    fig_stage(d, "vort_rms", "res_pinn_vort.png", "RMS vorticity error [10⁻³/Δt]", log=False, tops=tops,
+              fmt="{:.1f}", scale=1e3)
     fig_diag(d)
     if not a.skip_maps:
         maps()
