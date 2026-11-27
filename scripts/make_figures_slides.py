@@ -186,7 +186,7 @@ def fig_process(d, r=0.7):
         a.tick_params(axis="x", length=0)
     ax[0].set_ylabel(f"outlier rate (r = {r})")
     legend(fig, ["asym", "oracle", "ours"], h, marker=True)
-    save(fig, "res_process.png")
+    save(fig, "res_process.png" if abs(r - 0.7) < 1e-9 else f"res_process_r{r}.png")
 
 
 def fig_model(d):
@@ -218,7 +218,52 @@ CROP = {"synth": (slice(None), slice(None)), "lml": (slice(None), slice(None)),
 ARROWS = 16                  # arrows across a panel
 
 
-def fig_vectors(ds, s, uod=False):
+def first_case(ds, r):
+    """First test image / pair of a dataset at pulse ratio r (the selection rule of every map).
+    Returns dict(I, ref=(cx, cy, ru, rv), valid, fit_mask, mask)."""
+    import evaluate_paper as EP, evaluate_real as R_
+    from pivsep.synth import SynthParams, make_sample, gt_window_displacement
+    from pivsep.correlation import window_grid, multipass_piv
+    from pivsep.postproc import uod_median
+    if ds == "synth":
+        s = make_sample(np.random.default_rng(1000), SynthParams(r=r))
+        cx, cy = window_grid(s["img"].shape, EP.WIN, EP.STEP)[2:]
+        gu, gv = gt_window_displacement(s["flow"], cx, cy, EP.WIN)
+        return dict(I=s["img"], ref=(cx, cy, gu, gv), valid=np.hypot(gu, gv) > 2, fit_mask=None, mask=None)
+    if ds == "lml":
+        import evaluate_lml as E
+        C = np.load("data/lml/lml_samples.npz")
+        s = {k: C[f"translation|{r}|0.01|0|{k}"] for k in ("I", "P1", "P2")}
+        I = E.to_model_scale(s["I"]); cx, cy, gu, gv = E.gt_windows(s["P1"], s["P2"], I.shape)
+        return dict(I=I, ref=(cx, cy, gu, gv), valid=np.isfinite(gu) & (np.hypot(gu, gv) > 2), fit_mask=None, mask=None)
+    if ds == "caseC":
+        import evaluate_pivc as PC
+        frames, M = PC.load_case(); A, B = frames["bgsub"]
+        cx, cy, ru, rv = multipass_piv(A, B)
+        fm = PC.centre_mask(M, cx, cy)
+        return dict(I=R_.make_double(A, B, r), ref=(cx, cy, ru, rv),
+                    valid=fm & ~uod_median(ru, rv)[2] & (np.hypot(ru, rv) > 2), fit_mask=fm, mask=M)
+    key = "test1" if ds == "test1" else EP.TEST2_EVAL[0]
+    A, B = R_.normalize_pair(*(R_.crop(R_.preprocess(R_.load(f))) for f in R_.pairs()[key]))
+    cx, cy, ru, rv = multipass_piv(A, B)
+    return dict(I=R_.make_double(A, B, r), ref=(cx, cy, ru, rv),
+                valid=~uod_median(ru, rv)[2] & (np.hypot(ru, rv) > 2), fit_mask=None, mask=None)
+
+
+def vectors_at(r, datasets):
+    """MP + UOD vector maps at pulse ratio r (same layout as section III)."""
+    import evaluate_paper as EP
+    models = EP.load_models()
+    for ds in datasets:
+        c = first_case(ds, r)
+        m = EP.MAIN_MODEL[ds]
+        res = EP.run_methods({m: models[m]}, c["I"], c["ref"])
+        smp = dict(I=c["I"], cx=c["ref"][0], cy=c["ref"][1], ref=c["ref"][2:], valid=c["valid"], mask=c["mask"],
+                   fields={"asym": res["asym"], "oracle": res["oracle"], "ours": res[f"unet:{m}"]})
+        fig_vectors(ds, smp, uod=True, tag=f"_r{r}")
+
+
+def fig_vectors(ds, s, uod=False, tag=""):
     import matplotlib.colors as mc
     I, cx, cy, (ru, rv), valid = s["I"], s["cx"], s["cy"], s["ref"], s["valid"]
     ys, xs = CROP[ds]
@@ -260,7 +305,7 @@ def fig_vectors(ds, s, uod=False):
         quiv(a, u, v, out)
         a.set_title(f"{LAB[m].replace(' (ours)', '')}: {100 * out.sum() / valid.sum():.1f}%",
                     color=COL[m] if m != "oracle" else "#008a6c")
-    save(fig, f"res_vec_{ds}" + ("_uod" if uod else "") + ".png")
+    save(fig, f"res_vec_{ds}" + ("_uod" if uod else "") + tag + ".png")
 
 
 def fig_cdf(ex):
@@ -308,13 +353,21 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--skip-recompute", action="store_true")
     ap.add_argument("--vectors-uod-only", action="store_true", help="recompute only the MP + UOD vector maps")
+    ap.add_argument("--vectors-r", type=float, default=None, help="only MP + UOD vector maps at this r")
+    ap.add_argument("--datasets", nargs="+", default=[d for d, _ in DS])
     a = ap.parse_args()
     style()
+    if a.vectors_r is not None:
+        import torch
+        torch.set_num_threads(1)
+        vectors_at(a.vectors_r, a.datasets)
+        return
     d = json.load(open("results/eval_paper.json"))
     fig_outlier(d, "", "res_outlier.png", "outlier rate (multi-pass)")
     fig_outlier(d, "+uod", "res_outlier_uod.png", "outlier rate (MP + UOD)")
     fig_direction(d); fig_median(d); fig_process(d); fig_model(d)
     fig_direction(d, "+uod"); fig_median(d, "+uod")
+    fig_process(d, 0.9); fig_process(d, 0.5)
     if a.vectors_uod_only:
         import make_figures_paper as MP
         ex = MP.examples()

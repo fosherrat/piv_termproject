@@ -140,44 +140,31 @@ def fig_diag(d, r=0.7):
     for a_ in ax:
         a_.set_xticks(x); a_.set_xticklabels(names, fontsize=8.5); a_.tick_params(axis="x", length=0)
         a_.grid(axis="y"); a_.set_axisbelow(True)
-    S.save(fig, "res_pinn_diag.png")
+    S.save(fig, "res_pinn_diag.png" if abs(r - 0.7) < 1e-9 else f"res_pinn_diag_r{r}.png")
 
 
 # ------------------------------------------------------------------------------ maps
-def maps():
+def maps(r=0.7, datasets=("synth", "test2", "caseC"), threads=None):
     import torch
-    import evaluate_paper as EP, evaluate_real as R, evaluate_pinn as P
-    from pivsep.synth import SynthParams, make_sample, gt_window_displacement
-    from pivsep.correlation import window_grid, multipass_piv
+    import evaluate_paper as EP, evaluate_pinn as P
+    from pivsep.correlation import multipass_piv
     from pivsep.separation import unet_split
     from pivsep.postproc import uod_median, pinn_fit
-    torch.set_num_threads(os.cpu_count() or 4)
+    torch.set_num_threads(threads or os.cpu_count() or 4)
     models = EP.load_models()
-    r = 0.7
-    cases = {}
-    s = make_sample(np.random.default_rng(1000), SynthParams(r=r))
-    cx, cy = window_grid(s["img"].shape, EP.WIN, EP.STEP)[2:]
-    gu, gv = gt_window_displacement(s["flow"], cx, cy, EP.WIN)
-    cases["synth"] = (s["img"], (cx, cy, gu, gv), np.hypot(gu, gv) > 2, None, None)
-    A, B = R.normalize_pair(*(R.crop(R.preprocess(R.load(f))) for f in R.pairs()[EP.TEST2_EVAL[0]]))
-    cx, cy, ru, rv = multipass_piv(A, B)
-    cases["test2"] = (R.make_double(A, B, r), (cx, cy, ru, rv), ~uod_median(ru, rv)[2] & (np.hypot(ru, rv) > 2), None, None)
-    import evaluate_pivc as PC
-    frames, M = PC.load_case(); A, B = frames["bgsub"]
-    cx, cy, ru, rv = multipass_piv(A, B)
-    fm = PC.centre_mask(M, cx, cy)
-    cases["caseC"] = (R.make_double(A, B, r), (cx, cy, ru, rv), fm & ~uod_median(ru, rv)[2] & (np.hypot(ru, rv) > 2), fm, M)
-    for ds, (I, ref, valid, fm, M) in cases.items():
-        cx, cy, ru, rv = ref
-        sA, sB = unet_split(models[EP.MAIN_MODEL[ds]], I)
+    for ds in datasets:
+        c = S.first_case(ds, r)
+        cx, cy, ru, rv = c["ref"]
+        sA, sB = unet_split(models[EP.MAIN_MODEL[ds]], c["I"])
         u, v = multipass_piv(sA, sB, mask_r=EP.MASK_R)[2:]
         uu, vu = uod_median(u, v)[:2]
-        pu, pv = pinn_fit(cx, cy, uu, vu, steps=P.STEPS, fit_mask=fm)
-        qu, qv = pinn_fit(cx, cy, u, v, steps=P.STEPS, fit_mask=fm)
-        draw_map(ds, I, ref, valid, M, (uu, vu), (pu, pv), (qu, qv))
+        pu, pv = pinn_fit(cx, cy, uu, vu, steps=P.STEPS, fit_mask=c["fit_mask"])
+        qu, qv = pinn_fit(cx, cy, u, v, steps=P.STEPS, fit_mask=c["fit_mask"])
+        tag = "" if abs(r - 0.7) < 1e-9 else f"_r{r}"
+        draw_map(ds, c["I"], c["ref"], c["valid"], c["mask"], (uu, vu), (pu, pv), (qu, qv), tag=tag)
 
 
-def draw_map(ds, I, ref, valid, M, f_uod, f_pinn, f_pinn_raw):
+def draw_map(ds, I, ref, valid, M, f_uod, f_pinn, f_pinn_raw, tag=""):
     import matplotlib.colors as mc
     cx, cy, ru, rv = ref
     ys, xs = S.CROP[ds]
@@ -226,7 +213,7 @@ def draw_map(ds, I, ref, valid, M, f_uod, f_pinn, f_pinn_raw):
     cb = fig.colorbar(im, cax=cax, orientation="horizontal", ticks=[-1.5, 0, 1.5])
     cb.ax.tick_params(labelsize=7.5, colors=S.INK, length=2, pad=1)
     cax.set_facecolor("white")
-    S.save(fig, f"res_pinn_map_{ds}.png")
+    S.save(fig, f"res_pinn_map_{ds}{tag}.png")
 
 
 S_H = 16
@@ -237,8 +224,13 @@ def main():
     ap.add_argument("--inp", default="results/eval_pinn.json")
     ap.add_argument("--merge", nargs="+", default=None, help="partial result files to merge into --inp first")
     ap.add_argument("--skip-maps", action="store_true")
+    ap.add_argument("--maps-r", type=float, default=None, help="only PINN maps at this r")
+    ap.add_argument("--datasets", nargs="+", default=["synth", "lml", "test1", "test2", "caseC"])
     a = ap.parse_args()
     S.style()
+    if a.maps_r is not None:
+        maps(a.maps_r, a.datasets, threads=1)
+        return
     if a.merge:
         d = {}
         for f in a.merge:
@@ -254,7 +246,7 @@ def main():
             for ds, _ in S.DS}
     fig_stage(d, "vort_rms", "res_pinn_vort.png", "RMS vorticity error [10⁻³/Δt]", log=False, tops=tops,
               fmt="{:.1f}", scale=1e3)
-    fig_diag(d)
+    fig_diag(d); fig_diag(d, 0.9); fig_diag(d, 0.5)
     if not a.skip_maps:
         maps()
 
