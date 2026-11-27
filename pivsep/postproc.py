@@ -116,15 +116,18 @@ class StreamMLP(nn.Module):
 
 
 def pinn_fit(cx, cy, u, v, steps=1500, lr=3e-3, delta=0.5, seed=0, eval_xy=None,
-             sigma=1.0, lam=1e-5, n_col=1024):
+             sigma=1.0, lam=1e-5, n_col=1024, fit_mask=None):
     """Fit psi(x,y) with robust (Huber) loss on vectors. u = dpsi/dy, v = -dpsi/dx.
+    fit_mask (bool, grid shape): only these vectors enter the data loss (e.g. the flow
+    region of a masked recording); the field is still returned on the whole grid.
     Returns fitted u, v on the input grid (and on eval_xy if given)."""
     torch.manual_seed(seed)
     c0 = np.array([cx.mean(), cy.mean()])
     sc = 0.5 * max(np.ptp(cx), np.ptp(cy))
-    U = max(np.percentile(np.hypot(u, v), 95), 1e-6)     # robust velocity scale (outliers)
-    xy = torch.tensor(np.stack([(cx.ravel() - c0[0]) / sc, (cy.ravel() - c0[1]) / sc], 1), dtype=torch.float32)
-    tgt = torch.tensor(np.stack([u.ravel(), v.ravel()], 1) / U, dtype=torch.float32)
+    m = np.ones(u.shape, bool) if fit_mask is None else (fit_mask & np.isfinite(u) & np.isfinite(v))
+    U = max(np.percentile(np.hypot(u[m], v[m]), 95), 1e-6)     # robust velocity scale (outliers)
+    xy = torch.tensor(np.stack([(cx[m] - c0[0]) / sc, (cy[m] - c0[1]) / sc], 1), dtype=torch.float32)
+    tgt = torch.tensor(np.stack([u[m], v[m]], 1) / U, dtype=torch.float32)
     model = StreamMLP(sigma=sigma, seed=seed)
     opt = torch.optim.Adam(model.parameters(), lr)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, steps)
