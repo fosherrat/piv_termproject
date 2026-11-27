@@ -1,0 +1,16 @@
+\begin{table}[t]
+\centering
+\caption{Median / RMS displacement error (px) at $r=0.7$, multi-pass, no post-processing.}
+\label{tab:accuracy}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Dataset & Nonlin.\ auto-corr. & Auto-corr.$^\dagger$ & U-Net + CC (ours) & True $A,B$$^\ddagger$ \\
+\midrule
+Synthetic (ours) & 0.255 / 2.750 & 0.267 / 0.871 & 0.114 / 0.214 & 0.095 / 0.170 \\
+Synthetic (LML) & 0.647 / 4.195 & 0.982 / 2.821 & 0.184 / 0.363 & 0.031 / 0.048 \\
+Real: test1 & 0.295 / 4.392 & 0.229 / 1.212 & 0.193 / 0.528 & -- \\
+Real: case C & 1.605 / 10.461 & 0.277 / 3.227 & 0.178 / 2.336 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}

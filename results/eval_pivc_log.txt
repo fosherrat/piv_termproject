@@ -1,0 +1,62 @@
+grid (31, 61), fluid 1728, valid 1559, ref {'n': 1581, 'umean': -8.509693525227805, 'vmean': -4.632431499024763, 'urms': 2.255568365575978, 'vrms': 1.847256501760188, 'mag_median': 10.831452898132987}
+bgsub r=0.9 (n=1559):
+   asym                     out 0.618 sgn 0.373 med 7.987
+   thr_ccm                  out 0.990 sgn 0.352 med 12.104
+   unet_ccm:zeroshot        out 0.716 sgn 0.491 med 10.943
+   unet_mp:zeroshot         out 0.750 sgn 0.536 med 10.745
+   unet_mp:zeroshot+uod     out 0.730 sgn 0.535 med 10.644
+   unet_ccm:finetuned       out 0.609 sgn 0.435 med 8.746
+   unet_mp:finetuned        out 0.352 sgn 0.169 med 0.355
+   unet_mp:finetuned+uod    out 0.319 sgn 0.160 med 0.313
+   auto_or                  out 0.282 sgn 0.000 med 0.285
+bgsub r=0.7 (n=1559):
+   asym                     out 0.606 sgn 0.310 med 6.126
+   thr_ccm                  out 0.992 sgn 0.374 med 12.294
+   unet_ccm:zeroshot        out 0.644 sgn 0.369 med 8.024
+   unet_mp:zeroshot         out 0.225 sgn 0.058 med 0.224
+   unet_mp:zeroshot+uod     out 0.191 sgn 0.058 med 0.222
+   unet_ccm:finetuned       out 0.480 sgn 0.304 med 0.679
+   unet_mp:finetuned        out 0.125 sgn 0.021 med 0.178
+   unet_mp:finetuned+uod    out 0.110 sgn 0.021 med 0.177
+   auto_or                  out 0.304 sgn 0.000 med 0.300
+bgsub r=0.5 (n=1559):
+   asym                     out 0.731 sgn 0.357 med 10.011
+   thr_ccm                  out 0.996 sgn 0.397 med 12.293
+   unet_ccm:zeroshot        out 0.628 sgn 0.307 med 6.545
+   unet_mp:zeroshot         out 0.241 sgn 0.054 med 0.231
+   unet_mp:zeroshot+uod     out 0.222 sgn 0.047 med 0.229
+   unet_ccm:finetuned       out 0.470 sgn 0.254 med 0.643
+   unet_mp:finetuned        out 0.133 sgn 0.029 med 0.187
+   unet_mp:finetuned+uod    out 0.108 sgn 0.026 med 0.186
+   auto_or                  out 0.400 sgn 0.000 med 0.413
+raw r=0.9 (n=1559):
+   asym                     out 0.648 sgn 0.387 med 8.241
+   thr_ccm                  out 0.994 sgn 0.294 med 11.495
+   unet_ccm:zeroshot        out 0.746 sgn 0.486 med 10.993
+   unet_mp:zeroshot         out 0.620 sgn 0.343 med 5.371
+   unet_mp:zeroshot+uod     out 0.586 sgn 0.340 med 4.507
+   unet_ccm:finetuned       out 0.617 sgn 0.425 med 8.042
+   unet_mp:finetuned        out 0.391 sgn 0.206 med 0.370
+   unet_mp:finetuned+uod    out 0.358 sgn 0.207 med 0.347
+   auto_or                  out 0.300 sgn 0.000 med 0.291
+raw r=0.7 (n=1559):
+   asym                     out 0.622 sgn 0.338 med 6.645
+   thr_ccm                  out 0.997 sgn 0.332 med 11.727
+   unet_ccm:zeroshot        out 0.656 sgn 0.355 med 8.033
+   unet_mp:zeroshot         out 0.254 sgn 0.047 med 0.231
+   unet_mp:zeroshot+uod     out 0.232 sgn 0.044 med 0.226
+   unet_ccm:finetuned       out 0.495 sgn 0.300 med 0.958
+   unet_mp:finetuned        out 0.177 sgn 0.032 med 0.193
+   unet_mp:finetuned+uod    out 0.153 sgn 0.030 med 0.191
+   auto_or                  out 0.326 sgn 0.000 med 0.307
+raw r=0.5 (n=1559):
+   asym                     out 0.743 sgn 0.364 med 9.636
+   thr_ccm                  out 0.993 sgn 0.376 med 12.140
+   unet_ccm:zeroshot        out 0.638 sgn 0.292 med 6.936
+   unet_mp:zeroshot         out 0.277 sgn 0.061 med 0.230
+   unet_mp:zeroshot+uod     out 0.251 sgn 0.054 med 0.221
+   unet_ccm:finetuned       out 0.530 sgn 0.283 med 3.083
+   unet_mp:finetuned        out 0.207 sgn 0.044 med 0.214
+   unet_mp:finetuned+uod    out 0.174 sgn 0.040 med 0.210
+   auto_or                  out 0.415 sgn 0.000 med 0.440
+saved results/eval_pivc.json results/pivc_fields.npz

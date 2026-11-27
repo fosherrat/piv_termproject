@@ -1,0 +1,121 @@
+generated translation 0.9 0.01
+generated translation 0.7 0.01
+generated translation 0.5 0.01
+generated plasma 0.9 0.01
+generated plasma 0.7 0.01
+generated plasma 0.5 0.01
+generated translation 0.7 0.005
+generated translation 0.7 0.02
+generated plasma 0.7 0.005
+generated plasma 0.7 0.02
+translation r=0.9 ppp=0.01 (n=2700, grad bins [2700, 0, 0, 0]):
+   gt_cc                    out 0.004 sgn 0.002 med 0.203
+   gt_mp                    out 0.000 sgn 0.000 med 0.028
+   auto_or                  out 0.482 sgn 0.000 med 0.904
+   asym                     out 0.507 sgn 0.266 med 1.046
+   unet_ccm:zeroshot        out 0.114 sgn 0.012 med 0.422
+   unet_mp:zeroshot         out 0.027 sgn 0.001 med 0.251
+   unet_mp:zeroshot+uod     out 0.009 sgn 0.000 med 0.244
+   unet_ccm:finetuned       out 0.142 sgn 0.011 med 0.384
+   unet_mp:finetuned        out 0.048 sgn 0.000 med 0.235
+   unet_mp:finetuned+uod    out 0.025 sgn 0.000 med 0.225
+translation r=0.7 ppp=0.01 (n=2700, grad bins [2700, 0, 0, 0]):
+   gt_cc                    out 0.004 sgn 0.001 med 0.210
+   gt_mp                    out 0.000 sgn 0.000 med 0.030
+   auto_or                  out 0.530 sgn 0.000 med 1.201
+   asym                     out 0.409 sgn 0.141 med 0.724
+   unet_ccm:zeroshot        out 0.044 sgn 0.002 med 0.370
+   unet_mp:zeroshot         out 0.005 sgn 0.000 med 0.184
+   unet_mp:zeroshot+uod     out 0.000 sgn 0.000 med 0.181
+   unet_ccm:finetuned       out 0.067 sgn 0.001 med 0.370
+   unet_mp:finetuned        out 0.012 sgn 0.000 med 0.182
+   unet_mp:finetuned+uod    out 0.004 sgn 0.000 med 0.179
+translation r=0.5 ppp=0.01 (n=2700, grad bins [2700, 0, 0, 0]):
+   gt_cc                    out 0.005 sgn 0.001 med 0.197
+   gt_mp                    out 0.000 sgn 0.000 med 0.037
+   auto_or                  out 0.790 sgn 0.000 med 1.906
+   asym                     out 0.642 sgn 0.148 med 1.482
+   unet_ccm:zeroshot        out 0.086 sgn 0.001 med 0.497
+   unet_mp:zeroshot         out 0.010 sgn 0.000 med 0.305
+   unet_mp:zeroshot+uod     out 0.005 sgn 0.000 med 0.302
+   unet_ccm:finetuned       out 0.118 sgn 0.002 med 0.491
+   unet_mp:finetuned        out 0.015 sgn 0.000 med 0.304
+   unet_mp:finetuned+uod    out 0.008 sgn 0.000 med 0.305
+plasma r=0.9 ppp=0.01 (n=2363, grad bins [80, 519, 1343, 421]):
+   gt_cc                    out 0.022 sgn 0.001 med 0.245
+   gt_mp                    out 0.008 sgn 0.000 med 0.189
+   auto_or                  out 0.605 sgn 0.000 med 1.305
+   asym                     out 0.651 sgn 0.302 med 1.693
+   unet_ccm:zeroshot        out 0.478 sgn 0.089 med 0.947
+   unet_mp:zeroshot         out 0.351 sgn 0.039 med 0.713
+   unet_mp:zeroshot+uod     out 0.387 sgn 0.027 med 0.763
+   unet_ccm:finetuned       out 0.516 sgn 0.075 med 1.038
+   unet_mp:finetuned        out 0.399 sgn 0.024 med 0.791
+   unet_mp:finetuned+uod    out 0.421 sgn 0.014 med 0.817
+plasma r=0.7 ppp=0.01 (n=2524, grad bins [23, 296, 1554, 651]):
+   gt_cc                    out 0.024 sgn 0.003 med 0.280
+   gt_mp                    out 0.007 sgn 0.000 med 0.225
+   auto_or                  out 0.682 sgn 0.000 med 1.670
+   asym                     out 0.604 sgn 0.199 med 1.369
+   unet_ccm:zeroshot        out 0.326 sgn 0.018 med 0.699
+   unet_mp:zeroshot         out 0.187 sgn 0.004 med 0.502
+   unet_mp:zeroshot+uod     out 0.235 sgn 0.004 med 0.541
+   unet_ccm:finetuned       out 0.348 sgn 0.018 med 0.714
+   unet_mp:finetuned        out 0.231 sgn 0.006 med 0.534
+   unet_mp:finetuned+uod    out 0.275 sgn 0.004 med 0.589
+plasma r=0.5 ppp=0.01 (n=2410, grad bins [35, 480, 1405, 490]):
+   gt_cc                    out 0.020 sgn 0.003 med 0.248
+   gt_mp                    out 0.007 sgn 0.000 med 0.203
+   auto_or                  out 0.731 sgn 0.000 med 1.853
+   asym                     out 0.681 sgn 0.215 med 1.701
+   unet_ccm:zeroshot        out 0.330 sgn 0.029 med 0.741
+   unet_mp:zeroshot         out 0.228 sgn 0.013 med 0.560
+   unet_mp:zeroshot+uod     out 0.269 sgn 0.008 med 0.594
+   unet_ccm:finetuned       out 0.359 sgn 0.031 med 0.762
+   unet_mp:finetuned        out 0.258 sgn 0.011 med 0.581
+   unet_mp:finetuned+uod    out 0.299 sgn 0.007 med 0.636
+translation r=0.7 ppp=0.005 (n=2688, grad bins [2649, 0, 0, 39]):
+   gt_cc                    out 0.041 sgn 0.013 med 0.201
+   gt_mp                    out 0.000 sgn 0.000 med 0.038
+   auto_or                  out 0.540 sgn 0.000 med 1.242
+   asym                     out 0.395 sgn 0.155 med 0.652
+   unet_ccm:zeroshot        out 0.136 sgn 0.014 med 0.378
+   unet_mp:zeroshot         out 0.034 sgn 0.000 med 0.198
+   unet_mp:zeroshot+uod     out 0.008 sgn 0.000 med 0.192
+   unet_ccm:finetuned       out 0.128 sgn 0.012 med 0.351
+   unet_mp:finetuned        out 0.029 sgn 0.000 med 0.175
+   unet_mp:finetuned+uod    out 0.007 sgn 0.000 med 0.169
+translation r=0.7 ppp=0.02 (n=2700, grad bins [2700, 0, 0, 0]):
+   gt_cc                    out 0.000 sgn 0.000 med 0.194
+   gt_mp                    out 0.000 sgn 0.000 med 0.027
+   auto_or                  out 0.573 sgn 0.000 med 1.210
+   asym                     out 0.481 sgn 0.149 med 0.910
+   unet_ccm:zeroshot        out 0.029 sgn 0.001 med 0.397
+   unet_mp:zeroshot         out 0.003 sgn 0.000 med 0.260
+   unet_mp:zeroshot+uod     out 0.003 sgn 0.000 med 0.259
+   unet_ccm:finetuned       out 0.049 sgn 0.004 med 0.353
+   unet_mp:finetuned        out 0.013 sgn 0.000 med 0.242
+   unet_mp:finetuned+uod    out 0.010 sgn 0.000 med 0.239
+plasma r=0.7 ppp=0.005 (n=2456, grad bins [48, 507, 1416, 485]):
+   gt_cc                    out 0.078 sgn 0.019 med 0.276
+   gt_mp                    out 0.029 sgn 0.000 med 0.262
+   auto_or                  out 0.633 sgn 0.000 med 1.358
+   asym                     out 0.568 sgn 0.201 med 1.194
+   unet_ccm:zeroshot        out 0.392 sgn 0.044 med 0.788
+   unet_mp:zeroshot         out 0.293 sgn 0.012 med 0.610
+   unet_mp:zeroshot+uod     out 0.342 sgn 0.008 med 0.674
+   unet_ccm:finetuned       out 0.352 sgn 0.041 med 0.731
+   unet_mp:finetuned        out 0.241 sgn 0.009 med 0.554
+   unet_mp:finetuned+uod    out 0.294 sgn 0.009 med 0.622
+plasma r=0.7 ppp=0.02 (n=2384, grad bins [29, 380, 1550, 425]):
+   gt_cc                    out 0.008 sgn 0.000 med 0.243
+   gt_mp                    out 0.003 sgn 0.000 med 0.169
+   auto_or                  out 0.626 sgn 0.000 med 1.306
+   asym                     out 0.637 sgn 0.238 med 1.444
+   unet_ccm:zeroshot        out 0.331 sgn 0.076 med 0.721
+   unet_mp:zeroshot         out 0.216 sgn 0.036 med 0.537
+   unet_mp:zeroshot+uod     out 0.246 sgn 0.023 med 0.579
+   unet_ccm:finetuned       out 0.312 sgn 0.044 med 0.684
+   unet_mp:finetuned        out 0.205 sgn 0.023 med 0.523
+   unet_mp:finetuned+uod    out 0.231 sgn 0.015 med 0.553
+saved results/eval_lml.json results/lml_example.npz

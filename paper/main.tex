@@ -1,0 +1,409 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.3cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs,multirow}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{placeins}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\s}{\mathbf{s}}
+\newcommand{\dd}{\mathbf{d}}
+\newcommand{\p}{\mathbf{p}}
+\newcommand{\E}{\mathbb{E}}
+
+\title{Resolving the directional ambiguity of pulse-coded\\ double-exposure PIV by learned exposure separation}
+\author{Author name\\ \small Affiliation}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A double-exposure particle image contains both particle positions of a PIV measurement in a single frame, and its auto-correlation is symmetric, so the sign of the displacement cannot be recovered.
+Pulse coding (unequal laser pulse energies, intensity ratio $r<1$) breaks the symmetry in principle, but a Gaussian light sheet makes particle brightness vary far more than the coding ratio, so the pulse cannot be read from the brightness of a single particle.
+We analyse this problem and propose to separate the double exposure into its two exposures with a convolutional network (U-Net) and to evaluate the separated frames with standard multi-pass cross-correlation.
+The analysis gives (i) the Bayes limit of brightness-only classification of a single particle, (ii) a closed-form probability that out-of-plane motion reverses the brightness order of a particle pair, with a sufficient condition $r \le \exp[-w(1-w/2)/\sigma^2]$ for the order to be preserved, and (iii) a decomposition of the cross-correlation of softly separated frames showing that the direction is decided by an intensity-weighted vote of the particle pairs, so that the separation need not be accurate pixel by pixel.
+The window-level direction error predicted for an ideal pair classifier agrees with the measured error of the network.
+The method is compared with a nonlinear auto-correlation and with an auto-correlation given the true sign, all processed with the same multi-pass schedule, centre mask and validation, on synthetic images from two independent generators and on two real recordings, including case C of the First International PIV Challenge.
+Without any post-processing the proposed method gives the lowest outlier rate of the practical methods in every case (e.g.\ 0.9\,\% vs.\ 8.6\,\% on synthetic images and 12.5\,\% vs.\ 51.9\,\% on case C at $r=0.7$), and for $r\le0.7$ it matches or improves on the auto-correlation with the true sign.
+For weak coding ($r=0.9$) the idealised auto-correlation remains better on real recordings, in line with the analysis.
+\end{abstract}
+
+% ======================================================================
+\section{Introduction}
+
+Particle image velocimetry (PIV) estimates the displacement of tracer particles between two illuminations of a light sheet \citep{adrian1991,adrian2011,raffel2018}.
+With two separate camera frames, the cross-correlation of an interrogation window of frame $A$ (first pulse) with frame $B$ (second pulse) has its highest peak at the mean particle displacement $\dd$, including its sign \citep{keane1992,willert1991}.
+When both pulses are recorded on the same frame (double exposure), the natural estimator is the auto-correlation of the window.
+It has a self-correlation peak at the origin and two displacement peaks at $\pm\dd$ of equal height, so the magnitude of $\dd$ is measured but its sign is not.
+This directional ambiguity is the classical limitation of single-frame PIV; the remedies are image shifting, colour or polarisation coding, and pulse coding \citep{adrian1991,raffel2018}.
+
+Pulse coding uses two pulses of different energy, so that the second exposure is weaker by a factor $r<1$.
+In principle a particle pair then indicates its own order: the brighter image is the first one.
+In practice particle brightness depends on the out-of-plane position $z$ in the Gaussian light-sheet profile and varies over an order of magnitude, much more than the coding ratio.
+A particle cannot be assigned to a pulse from its brightness alone (Section~\ref{sec:theory}); only the pair, i.e.\ two particle images with the same displacement as their neighbours and a brightness ratio close to $r$, carries the information.
+
+Convolutional networks have been used to estimate displacement fields directly from two PIV frames \citep{rabault2017,cai2019,lagemann2021}.
+Here a network is used for a narrower task that keeps the established correlation analysis: an image-to-image U-Net \citep{ronneberger2015} splits a pulse-coded double exposure $I$ into estimates $\hat A$ and $\hat B$ of the two exposures, with $\hat A+\hat B=I$, and the displacement is measured by standard multi-pass cross-correlation with window deformation \citep{scarano2002}.
+The double-exposure problem is thus turned into a double-frame problem.
+
+The contributions are:
+\begin{enumerate}
+\item An analysis of what pulse coding can and cannot resolve under a Gaussian light sheet: the Bayes error of single-particle classification, a closed form for the probability that out-of-plane motion reverses a pair, and a decomposition of the cross-correlation of softly separated frames into a weighted vote of the particle pairs (Section~\ref{sec:theory}).
+\item A separation network trained on synthetic images, with self-supervised fine-tuning on real double-frame recordings that needs no labels (Section~\ref{sec:method}).
+\item A comparison in which all methods are given the same processing (multi-pass schedule, centre mask, sub-pixel fit, validation and evaluation vectors), on two independent synthetic generators and two real recordings (Sections~\ref{sec:setup}--\ref{sec:results}).
+We show that unequal processing can account for most of an apparent advantage, and report where the proposed method does not win.
+\end{enumerate}
+
+% ======================================================================
+\section{Problem formulation and analysis}\label{sec:theory}
+
+\subsection{Image model}
+Within an interrogation window the displacement is assumed uniform, $\dd$.
+Particle $i$ is at $\x_i$ during the first pulse and at $\x_i+\dd$ during the second, with out-of-plane positions $z_i$ and $z_i+\delta$ (sheet coordinates, sheet occupying $|z|\le1$).
+With a particle image $h(\x)$ and a Gaussian sheet profile $f(z)=\exp(-z^2/2\sigma^2)$,
+\begin{equation}
+A(\x)=\sum_i a_i\,h(\x-\x_i),\qquad B(\x)=\sum_i b_i\,h(\x-\x_i-\dd),\qquad
+a_i=I_0 f(z_i),\quad b_i=r\,I_0 f(z_i+\delta),
+\label{eq:model}
+\end{equation}
+and the recorded double exposure is $I=A+B+n$ with background and noise $n$.
+Particle positions are independent and uniformly distributed, and $z_i\sim\mathcal U(-1,1)$.
+In the numerical examples $\sigma=0.4$ and $|\delta|\le w=0.1$, the values of our synthetic generator.
+
+\subsection{Equal pulses: the direction is not identifiable}
+\begin{proposition}\label{prop:ambig}
+Let $r=1$ and $\delta=0$. For any displacement $\dd$ and particle set $\{(\x_i,a_i)\}$ the particle set $\{(\x_i+\dd,a_i)\}$ with displacement $-\dd$ produces the same image $I$. Consequently $p(I\mid\dd)=p(I\mid-\dd)$ for the uniform position distribution, every estimator has a direction error of $1/2$ under a symmetric prior, and the auto-correlation $R_{II}(\s)=\sum_\x I(\x)I(\x+\s)$ satisfies $R_{II}(\s)=R_{II}(-\s)$.
+\end{proposition}
+\begin{proof}
+$\sum_i a_i[h(\x-\x_i)+h(\x-\x_i-\dd)]=\sum_i a_i[h(\x-\x_i')+h(\x-\x_i'+\dd)]$ with $\x_i'=\x_i+\dd$, and the uniform distribution of positions is invariant under translation. The symmetry of $R_{II}$ follows from the substitution $\x\to\x-\s$ (with periodic or zero-padded windows).
+\end{proof}
+With pulse coding the swap maps the brightness pair $(a_i,b_i)$ to $(b_i,a_i)$, i.e.\ the ratio $b_i/a_i$ to $a_i/b_i$. The direction becomes identifiable to the extent that these ratios can be told apart, which is limited by the light sheet as shown next.
+
+\subsection{Single particles: brightness classification is unreliable}
+The log-brightness of a first-exposure particle is $\ell=\ln I_0-z^2/2\sigma^2$, and that of a second-exposure particle (for $\delta=0$) is $\ell+\ln r$.
+The Bayes error of deciding the exposure of one particle from its brightness, with equal priors, is
+\begin{equation}
+\varepsilon_1(r)=\tfrac12\int\min\{p_\ell(\lambda),\,p_\ell(\lambda-\ln r)\}\,d\lambda .
+\end{equation}
+For $\sigma=0.4$, $\varepsilon_1=0.26$, 0.33 and 0.40 for $r=0.5$, 0.7 and 0.9 (Fig.~\ref{fig:theory}a).
+Any threshold on particle brightness therefore misassigns a large fraction of particles, which is why thresholding methods fail even at strong coding; this was confirmed by a blob-threshold baseline in our preliminary experiments.
+The information must come from pairs.
+
+\subsection{Pairs: when does out-of-plane motion reverse the order?}
+A pair is correctly ordered by brightness iff $b_i<a_i$.
+\begin{proposition}\label{prop:flip}
+Under the model \eqref{eq:model} with $z_i\sim\mathcal U(-1,1)$, the probability that a pair is reversed ($b_i\ge a_i$) for a given out-of-plane displacement $\delta\neq0$ is
+\begin{equation}
+P_\mathrm{flip}(r,\delta)=\tfrac12\max\Bigl\{0,\;1-\frac{|\delta|}{2}-\frac{\sigma^2\ln(1/r)}{|\delta|}\Bigr\}.
+\label{eq:flip}
+\end{equation}
+\end{proposition}
+\begin{proof}
+$b_i\ge a_i \iff \ln r-[(z_i+\delta)^2-z_i^2]/2\sigma^2\ge0 \iff z_i\,\delta\le-(\delta^2/2+\sigma^2\ln(1/r))$.
+For $\delta>0$ this is $z_i\le-c/\delta$ with $c=\delta^2/2+\sigma^2\ln(1/r)$, of probability $\frac12(1-c/\delta)$ when $c/\delta\le1$ and 0 otherwise; $\delta<0$ is symmetric.
+\end{proof}
+\begin{corollary}\label{cor:rstar}
+No pair is reversed for any $|\delta|\le w\le1$ iff $\sigma^2\ln(1/r)\ge w(1-w/2)$, i.e.\ for
+\begin{equation}
+r\le r^\ast=\exp\!\bigl[-w(1-w/2)/\sigma^2\bigr].
+\end{equation}
+\end{corollary}
+\begin{proof}
+With $c_0=\sigma^2\ln(1/r)$, $g(\delta)=1-\delta/2-c_0/\delta$ is maximal at $\delta=\sqrt{2c_0}$. If $c_0\ge w(1-w/2)$ then $2c_0\ge w^2$ (as $w\le1$), so $g$ increases on $(0,w]$ and $g(w)=1-w/2-c_0/w\le0$. Conversely, if $c_0<w(1-w/2)$ then $g(w)>0$.
+\end{proof}
+For $\sigma=0.4$ and $w=0.1$, $r^\ast=0.55$.
+Averaged over $\delta\sim\mathcal U(-w,w)$ the reversal probability is 0, 0.05 and 0.25 for $r=0.5$, 0.7 and 0.9 (Fig.~\ref{fig:theory}a).
+Weak coding is therefore limited by the physics of the light sheet and not only by the estimator: at $r=0.9$ a quarter of the pairs carry the wrong order.
+
+\subsection{Cross-correlation of separated frames is a weighted vote}
+Let the separator output a soft mask $m(\x)\in[0,1]$ with $\hat A=mI$ and $\hat B=(1-m)I$.
+Assume that the mask is constant over each particle image, $m_i^A$ on the first image of pair $i$ and $m_i^B$ on the second, and that particle images do not overlap.
+Writing $H_2(\s)=\sum_\x h(\x)h(\x+\s)$ and neglecting correlations between different particles,
+\begin{align}
+R_{\hat A\hat B}(\s)=\sum_i\Bigl[&a_i^2\,m_i^A(1-m_i^A)\,H_2(\s)+b_i^2\,m_i^B(1-m_i^B)\,H_2(\s)\nonumber\\
+&+a_ib_i\,m_i^A(1-m_i^B)\,H_2(\s-\dd)+a_ib_i\,m_i^B(1-m_i^A)\,H_2(\s+\dd)\Bigr].
+\label{eq:Rsep}
+\end{align}
+The first two terms are leakage peaks at the origin, removed by a centre mask as in auto-correlation.
+For the displacement peaks,
+\begin{equation}
+R_{\hat A\hat B}(\dd)-R_{\hat A\hat B}(-\dd)\;\propto\;\sum_i a_ib_i\,\bigl(m_i^A-m_i^B\bigr).
+\label{eq:vote}
+\end{equation}
+\begin{proposition}\label{prop:vote}
+Under the assumptions above the cross-correlation of the separated frames returns the correct direction iff the intensity-weighted vote $S=\sum_i w_i\Delta m_i$, $w_i=a_ib_i$, $\Delta m_i=m_i^A-m_i^B\in[-1,1]$, is positive.
+\end{proposition}
+Three consequences follow.
+(i)~The separator does not have to be accurate pixel by pixel: it suffices that the first image of most (weighted) pairs receives a larger mask value than the second.
+(ii)~For an ideal pair classifier, $\Delta m_i=\operatorname{sign}(a_i-b_i)$, the window direction is wrong only if the weighted reversed pairs outweigh the others. If pair reversals are independent with weighted rate $\bar\varepsilon<\frac12$ given $\delta$, Hoeffding's inequality \citep{hoeffding1963} gives
+\begin{equation}
+P(S<0)\le\exp\!\Bigl[-\tfrac12 N_\mathrm{eff}(1-2\bar\varepsilon)^2\Bigr],\qquad N_\mathrm{eff}=\frac{(\sum_iw_i)^2}{\sum_iw_i^2},
+\label{eq:hoeffding}
+\end{equation}
+so the direction error decays exponentially with the number of particle pairs in the window. Figure~\ref{fig:theory}b shows the exact window error of the ideal pair vote (Monte Carlo, Poisson number of pairs).
+(iii)~With symmetric window deformation by a predictor $\p$, $\hat A'(\x)=\hat A(\x-\p/2)$ and $\hat B'(\x)=\hat B(\x+\p/2)$, the leakage terms of \eqref{eq:Rsep} move to $\s=-\p$; the centre mask must follow them.
+
+\subsection{Nonlinear auto-correlation}
+The classical way to exploit pulse coding without separation is a nonlinear auto-correlation $C(\s)=\sum_\x I^2(\x)\,I(\x+\s)$.
+With the same assumptions and $H_3(\s)=\sum_\x h^2(\x)h(\x+\s)$,
+\begin{equation}
+C(\dd)-C(-\dd)\;\propto\;\sum_i a_ib_i\,(a_i-b_i).
+\label{eq:asym}
+\end{equation}
+This is also a weighted vote, but each pair contributes in proportion to its brightness difference, which vanishes as $r\to1$, while the correlation of unrelated particles (random peaks) does not.
+For $\delta=0$, $b_i=ra_i$ and $C(\dd)/C(-\dd)=1/r$, so the normalised margin
+\begin{equation}
+\mu=\frac{C(\dd)-C(-\dd)}{|C(\dd)|+|C(-\dd)|}=\frac{1-r}{1+r}
+\label{eq:margin}
+\end{equation}
+is only 0.18 at $r=0.7$ and 0.05 at $r=0.9$, whereas for the separated frames with $|\Delta m_i|\to1$ the $-\dd$ peak of \eqref{eq:Rsep} vanishes and $\mu\to1$. The decision margin relative to this background therefore scales with $1-r$, whereas in \eqref{eq:vote} a confidently classified pair contributes $|\Delta m_i|\approx1$ independent of $r$. In addition, the self-correlation peak of $C$ is centred at the origin and overlaps the displacement peaks when $|\dd|$ is comparable with the particle image diameter; separation removes the self peak up to the leakage terms.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_theory.pdf}
+\caption{(a) Brightness-only limits for $\sigma=0.4$: Bayes error of assigning a single particle to a pulse, and probability \eqref{eq:flip} that a pair is reversed by out-of-plane motion, averaged over $\delta\sim\mathcal U(-w,w)$. (b) Window direction error of an ideal pair classifier (weighted vote, Proposition~\ref{prop:vote}) for 31 and 10 pairs per $32\times32$ window, and measured direction errors on our synthetic images (31 pairs per window, $w=0.1$): U-Net + multi-pass CC and single-pass nonlinear auto-correlation. Measured values of 0 are drawn at the resolution $1/2700$.}
+\label{fig:theory}
+\end{figure}
+
+% ======================================================================
+\section{Method}\label{sec:method}
+
+\subsection{Separation network}
+The input is the double exposure after subtraction of its median, $I'=\max(I-\operatorname{median}I,0)$.
+A U-Net \citep{ronneberger2015} with three down-sampling levels (24, 48, 96 and 192 channels; two $3\times3$ convolutions with batch normalisation and ReLU per level; max pooling; transposed convolutions; skip connections) outputs a sigmoid mask $m$, and $\hat A=mI'$, $\hat B=(1-m)I'$.
+The mask parametrisation conserves intensity, $\hat A+\hat B=I'$, so the network only decides where each part of the image belongs.
+It is fully convolutional and applied to images of any size; its receptive field (about 100\,px; 68\,px at the bottleneck) covers many particle pairs, so the decision for one pair can use the displacement of its neighbours (Fig.~\ref{fig:unet}a and Section~\ref{sec:inside}).
+
+\paragraph{Loss.}
+The pixel target is $t=A/(A+B)$, the fraction of the intensity due to the first pulse.
+The loss is a binary cross-entropy weighted by particle intensity,
+\begin{equation}
+\mathcal L=\frac{\sum_\x w(\x)\,\mathrm{BCE}\bigl(m(\x),t(\x)\bigr)}{\sum_\x w(\x)},\qquad w=\sqrt{\frac{A+B}{\max(A+B)}},
+\end{equation}
+so that background pixels do not count and dim particles, which dominate the vote \eqref{eq:vote} less but are numerous, still do.
+In preliminary experiments this loss was better than a reconstruction MSE on $\hat A,\hat B$ in all tested conditions.
+
+\paragraph{Synthetic training data.}
+Images of $128^2$ pixels are rendered with pixel-integrated Gaussian particle images (diameter $d_\tau\sim\mathcal N(\bar d,0.5)$, $\bar d\sim\mathcal U(2.2,3.5)$\,px), the sheet profile of \eqref{eq:model} with $\sigma=0.4$ and $w\sim\mathcal U(0,0.15)$, density $\mathcal U(0.015,0.08)$ particles per pixel, Gaussian noise of standard deviation $\mathcal U(0.005,0.05)$ (peak intensity 0.6) and $r\sim\mathcal U(0.45,0.95)$.
+Flows are exactly divergence-free: a uniform displacement of 4--8\,px in a random direction, six random Fourier modes of a stream function (wavelengths 48--256\,px, perturbation 0--3\,px) and 0--2 Lamb--Oseen vortices; particles are advected with RK4.
+We train on 6000 images for 4000 steps (batch 16, AdamW, one-cycle learning rate with maximum $2\times10^{-3}$, random rotations and flips).
+
+\paragraph{Self-supervised fine-tuning on real recordings.}
+A double-frame recording $(A,B)$ provides a labelled double exposure $I=gA+g\,rB+b_0$ for any $r$ without manual annotation.
+The model is fine-tuned for 1500 steps (learning rate $5\times10^{-4}$, cosine decay) on batches of half synthetic images and half $128^2$ crops of three image pairs of the OpenPIV \texttt{test2} recording (cylinder wake) \citep{openpiv}, with $g\sim\mathcal U(0.6,1.4)$ and $r\sim\mathcal U(0.45,0.95)$.
+No image of the evaluation recordings is used.
+
+\subsection{Correlation analysis}
+All methods share the same processing:
+\begin{itemize}
+\item Three passes with windows $64\to32\to32$\,px and 50\,\% overlap; the final grid is the $32$\,px single-pass grid.
+\item Between passes the field is validated with the universal outlier detection (UOD; $3\times3$ neighbourhood, threshold 2, $\varepsilon=0.1$\,px) \citep{westerweel2005}, rejected vectors are replaced by the neighbourhood median, and the field is smoothed (Gaussian, one grid spacing).
+\item From the second pass on the residual peak search is limited to $|\s|\le\mathrm{win}/4$.
+\item A centre mask of radius 3\,px excludes the self or leakage peak; three-point Gaussian sub-pixel fit \citep{willert1991}.
+\end{itemize}
+
+\paragraph{Separated frames (proposed).}
+$\hat A,\hat B$ are evaluated by multi-pass cross-correlation with symmetric image deformation \citep{scarano2002}, $\hat A'(\x)=\hat A(\x-\p/2)$, $\hat B'(\x)=\hat B(\x+\p/2)$ with cubic-spline interpolation, where $\p(\x)$ is the interpolated predictor. Following Section~\ref{sec:theory} the leakage mask is centred at $-\p$.
+
+\paragraph{Multi-pass auto-correlation (baselines).}
+A single double exposure cannot be deformed differently for the two exposures, so the windows stay in place, and the predictor restricts the search to two discs of radius $\mathrm{win}/4$ around $+\p$ and $-\p$, the auto-correlation counterpart of the quarter rule. Two variants are used:
+\begin{itemize}
+\item \emph{Nonlinear auto-correlation} $C(\s)$ of the window after subtraction of its median: in the first pass the global peak outside the centre mask is taken, in later passes the higher of the two candidate peaks; by \eqref{eq:asym} the higher peak indicates the direction.
+\item \emph{Auto-correlation with the true sign} (idealised): plain auto-correlation $R_{II}$, whose sign is taken in every pass from the reference field. It measures what auto-correlation could achieve if the direction problem were solved by other means, and is not a realisable method.
+\end{itemize}
+
+\paragraph{Post-processing.}
+The final field is reported without post-processing and after the same UOD with median replacement for every method.
+UOD is not uniformly beneficial: on our synthetic vortical flows it increases the outlier rate of the true-frame cross-correlation from 0.1\,\% to 1.6\,\% by rejecting valid vectors in strong gradients. Reporting only post-processed fields would therefore favour methods with many isolated outliers.
+
+% ======================================================================
+\section{Experimental setup}\label{sec:setup}
+
+\subsection{Datasets}
+\begin{table}[t]
+\centering
+\caption{Evaluation datasets. ppp: particles per pixel; $d_\tau$: particle image diameter; $n$: evaluated vectors per $r$.}
+\label{tab:data}
+\small
+\begin{tabular}{lp{4.3cm}p{5.0cm}r}
+\toprule
+Dataset & Images & Characteristics & $n$\\
+\midrule
+Synthetic (ours) & 12 images $256^2$ per $r$ & ppp 0.03, $d_\tau=2.8\pm0.5$\,px, Gaussian sheet ($\sigma=0.4$, $w=0.1$), noise 0.015, divergence-free flows with vortices & 2691\\
+Synthetic (LML) & 12 images $256^2$ per $r$ & independent generator \citep{coudert_lml}; ppp 0.01, $d_\tau\approx4$--8\,px, uniform brightness, 8-bit, saturation; uniform translation 4--8\,px & 2700\\
+Real: test1 & one pair, $368\times496$ & OpenPIV example \citep{openpiv}, dense small particles, $|\dd|\approx5$\,px; not used for training & 638\\
+Real: case C & one pair, $512\times992$ & First PIV Challenge case C \citep{stanislas2003}: centrifugal impeller, strong wall reflection and flare, background images and mask provided, $|\dd|\approx11$\,px; not used for training & 1559\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:data} lists the datasets; for every dataset $r\in\{0.9,0.7,0.5\}$.
+\emph{Synthetic (ours)} uses the generator of the training data with fixed parameters and seeds.
+\emph{Synthetic (LML)} is a test against generator bias: particle positions, sizes and brightness, displacements and rendering (Gaussian sprites with tail cut-off, uniform noise, background ramp, 8-bit saturation) come from the public generator of the Laboratoire de M\'ecanique de Lille \citep{coudert_lml}. The only change is pulse coding, applied by multiplying the level of every second-exposure particle by $r$ before rendering. Its particle images are larger than ours and comparable with the displacement, so the two images of a pair overlap. The generator's random ``plasma'' displacement field is not used because it is not a physical (divergence-free) flow.
+For the real recordings a pulse-coded double exposure is synthesised from the two frames after background removal (case C: provided background images) and normalisation, $I=A+rB+b_0$.
+
+\subsection{Reference, evaluation vectors and metrics}
+For synthetic images the reference is the true mean displacement of each window (ours: average of the Lagrangian displacement over the window; LML: intensity-weighted mean of the particles whose midpoint lies in the window).
+For real recordings it is the multi-pass cross-correlation of the real frames $A,B$, and only vectors that pass UOD are evaluated (case C additionally: window centre inside the provided mask).
+For all datasets only vectors with $|\dd_\mathrm{ref}|>2$\,px are evaluated, since double exposures require $|\dd|$ larger than about $1.5\,d_\tau$.
+The evaluation set depends on the reference only and is identical for all methods.
+Metrics are the outlier rate ($|\mathbf u-\mathbf u_\mathrm{ref}|>1$\,px), the direction-error rate ($\mathbf u\cdot\mathbf u_\mathrm{ref}<0$) and the median and RMS error.
+For the synthetic sets, 95\,\% intervals are obtained by bootstrap resampling of whole images \citep{efron1993}.
+The U-Net model is fixed per domain before evaluation: the synthetic-only model for synthetic data and the fine-tuned model for real data (both are reported in Table~\ref{tab:model}).
+
+% ======================================================================
+\section{Results}\label{sec:results}
+
+\subsection{Outlier rate}
+\input{tab_main}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_outliers.pdf}
+\caption{Outlier rate of Table~\ref{tab:main} per dataset and pulse ratio, multi-pass without (top) and with (bottom) UOD. Log scale; bars that are absent are 0. Error bars on the synthetic sets: 95\,\% bootstrap interval over images.}
+\label{fig:outliers}
+\end{figure}
+
+Table~\ref{tab:main} and Fig.~\ref{fig:outliers} give the outlier rates.
+Without post-processing the proposed method has the lowest outlier rate of the realisable methods in all twelve cases, and is close to the true-frame upper bound on synthetic images (0.7--1.3\,\% vs.\ 0.1\,\%).
+On the LML images the auto-correlation methods fail even with the true sign (47--74\,\%): the particle images are as large as the displacement, so the self-correlation peak overlaps the displacement peaks and the centre mask removes part of the signal, as discussed after \eqref{eq:asym}. The separated frames do not have this problem (0.5--3.6\,\%).
+On case C, where the flare and the high seeding density make all methods harder, the proposed method has 12.5\,\% outliers at $r=0.7$ against 51.9\,\% for the nonlinear auto-correlation and 24.4\,\% for the auto-correlation with the true sign.
+
+UOD changes the picture considerably for the auto-correlation methods, whose errors are mostly isolated sign reversals that UOD corrects (e.g.\ test1, $r=0.7$: 21.0\,\% $\to$ 0.9\,\%). After UOD the proposed method is still the best realisable method in all cases, but the margin over the nonlinear auto-correlation is smaller on test1 (0.2 vs.\ 0.9\,\% at $r=0.7$). On our synthetic flows UOD slightly increases the outlier rate of the proposed method and of the true frames, by rejecting valid vectors near vortices.
+
+Figures~\ref{fig:vec_synth}--\ref{fig:vec_casec} show one vector field per dataset at $r=0.7$, without post-processing. The outliers of the nonlinear auto-correlation are scattered sign reversals and random peaks; those of the auto-correlation with the true sign are magnitude errors, concentrated where particle images overlap (LML) or near walls and reflections (case C). The outliers of the proposed method on case C lie along the blade, in the shadow and at the flare, where the reference is also uncertain.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_vec_synth.pdf}
+\caption{Synthetic (ours), $r=0.7$, first test image, multi-pass without post-processing. White: correct; red: outlier ($>1$\,px). Titles give the outlier rate of this image.}
+\label{fig:vec_synth}
+\end{figure}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_vec_lml.pdf}
+\caption{Synthetic (LML), $r=0.7$, first test image; particle images are as large as the displacement. Same layout as Fig.~\ref{fig:vec_synth}.}
+\label{fig:vec_lml}
+\end{figure}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_vec_test1.pdf}
+\caption{Real recording test1, $r=0.7$. Reference from the real frames; grey: not evaluated. Same layout as Fig.~\ref{fig:vec_synth}.}
+\label{fig:vec_test1}
+\end{figure}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_vec_caseC.pdf}
+\caption{PIV Challenge case C, $r=0.7$, every second vector shown; masked regions (blade, walls) in white, grey vectors not evaluated. Same colours as Fig.~\ref{fig:vec_synth}.}
+\label{fig:vec_casec}
+\end{figure}
+
+\paragraph{Where the method does not win.}
+At $r=0.9$ the idealised auto-correlation is better on both real recordings (test1 after UOD: 0.5 vs.\ 6.1\,\%; case C: 15.7 vs.\ 31.9\,\%). This is the regime predicted by Corollary~\ref{cor:rstar} and Fig.~\ref{fig:theory}: a quarter of the pairs are reversed by out-of-plane motion and the vote \eqref{eq:vote} becomes unreliable when the window contains few effective pairs. The idealised baseline is told the sign, so this comparison bounds what separation must achieve rather than describing a competing practical method.
+
+\subsection{Direction and accuracy}
+\input{tab_direction}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_dir_acc.pdf}
+\caption{Top: direction-error rate (log scale; absent bars are 0; the idealised auto-correlation is 0 by construction and not shown). Bottom: median error; values above the axis limit are printed in the bar. Multi-pass, no post-processing.}
+\label{fig:dir_acc}
+\end{figure}
+
+Table~\ref{tab:direction} and Fig.~\ref{fig:dir_acc} separate sign errors from magnitude errors.
+The proposed method has no direction errors on synthetic data except 0.2\,\% at $r=0.9$, and 0--4.2\,\% on test1. Its remaining case-C outliers at $r\le0.7$ are mostly magnitude errors near the blade, the flare and the shadow (direction errors 2.1--2.9\,\%, Fig.~\ref{fig:vec_casec}).
+The nonlinear auto-correlation has 4.6--34.7\,\% direction errors before validation.
+Figure~\ref{fig:theory}b compares the measured direction error of the network on our synthetic images with the ideal pair vote of Proposition~\ref{prop:vote} for the same pair density (31 pairs per window): 5.7\,\% measured vs.\ 5.9\,\% predicted at $r=0.95$ and 0.22\,\% vs.\ 0.5\,\% at $r=0.9$.
+The network is thus at the level of an ideal brightness-order classifier; further gains at weak coding require more pairs per window (larger windows, higher density) or information beyond brightness.
+
+\input{tab_accuracy}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_cdf.pdf}
+\caption{Cumulative distribution of the vector error at $r=0.7$ (multi-pass, no post-processing; all evaluated vectors). The dotted line is the outlier threshold.}
+\label{fig:cdf}
+\end{figure}
+
+The median error (Table~\ref{tab:accuracy}, Fig.~\ref{fig:dir_acc}) of the proposed method is the lowest of the double-exposure methods on every dataset (synthetic: 0.11 vs.\ 0.26--0.27\,px), because the cross-correlation of separated frames has no self-correlation peak next to the displacement peak. On synthetic data it approaches the true frames (0.11 vs.\ 0.095\,px); on LML images the remaining gap (0.18 vs.\ 0.03\,px) reflects imperfect separation of overlapping pair images.
+The error distributions (Fig.~\ref{fig:cdf}) show that the advantage is not limited to the tail: the whole distribution of the proposed method is shifted to smaller errors on the synthetic sets, and on the real recordings its bulk is similar to the auto-correlation with the true sign while its tail of large errors is much lighter.
+
+\subsection{Processing and fine-tuning}
+\input{tab_process}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_process.pdf}
+\caption{Outlier rate at $r=0.7$ for each processing stage (Table~\ref{tab:process}): single pass (SP) or multi-pass (MP), without or with UOD. Log scale; points at the bottom are 0.}
+\label{fig:process}
+\end{figure}
+
+Table~\ref{tab:process} and Fig.~\ref{fig:process} show that the processing matters as much as the estimator. Multi-pass processing helps every method, most of all the separated frames on case C, where the displacement (about 11\,px) exceeds the quarter rule of a single $32$\,px pass (48.0\,\% $\to$ 12.5\,\%). An evaluation that compares the proposed method with multi-pass processing and post-processing against single-pass auto-correlation without post-processing (the usual way baselines are run) would overstate the gain several-fold: on test1 at $r=0.7$ the difference would be 26.5\,\% vs.\ 0.2\,\% instead of 0.9\,\% vs.\ 0.2\,\% after matching.
+
+\input{tab_model}
+
+Table~\ref{tab:model} compares the synthetic-only and the fine-tuned networks. On synthetic data both are equivalent. On the real recordings, neither of which was used for fine-tuning, self-supervised fine-tuning on another recording reduces the outliers substantially (case C, $r=0.7$: 19.1 $\to$ 11.0\,\%; test1, $r=0.9$: 23.4 $\to$ 6.1\,\%). Fine-tuning needs only double-frame recordings of a similar set-up, which are usually available.
+
+\subsection{What the network does}\label{sec:inside}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{fig_unet.pdf}
+\caption{Inside the separation. (a) Architecture: the U-Net outputs a soft mask $m$ that splits the double exposure into $\hat A$ and $\hat B$, which are evaluated by multi-pass cross-correlation. (b) A $80\times80$\,px crop of a synthetic image at $r=0.7$: input, mask on particle pixels ($m=1$: first exposure), separated frames and truth. (c) Correlation planes of one window (colour scale set outside the centre). (d) Probe images with all pairs sharing one brightness ratio $\rho=b_i/a_i$: weighted mean and interquartile range of the per-pair mask difference $\Delta m_i$; orange: pairs with reversed order ($\rho=1/0.7$) placed among a majority with $\rho=0.7$. (e) Distribution of the normalised direction margin per window, Eq.~\eqref{eq:margin}, on the 12 synthetic test images.}
+\label{fig:unet}
+\end{figure}
+
+Figure~\ref{fig:unet} relates the trained network to the analysis of Section~\ref{sec:theory}.
+In the example (b) the mask is close to 1 or 0 on most particle images and the separated frames resemble the truth, although individual particles are misassigned.
+In the correlation planes (c), the auto-correlation has equal peaks at $\pm\dd$, the nonlinear auto-correlation a slightly higher peak at $+\dd$, and the cross-correlation of the separated frames a single peak at $+\dd$ with no counterpart at $-\dd$.
+
+\paragraph{Pair decision.}
+To see what the network uses, we rendered probe images in which every pair has the same brightness ratio $\rho$ (light-sheet brightness variation, noise and a uniform displacement as in the test data) and measured $\Delta m_i$ at the two images of each pair (Fig.~\ref{fig:unet}d).
+The response is a step: $\Delta m_i\approx+0.75$ for every $\rho<1$, from $\rho=0.3$ to $0.85$, and $\approx-0.72$ for $\rho>1$; at $\rho=1$, where Proposition~\ref{prop:ambig} applies, it collapses to $+0.25$ with only 52--79\,\% of the pairs on either side.
+The network therefore decides by the \emph{order} of the brightness in a pair, not by its ratio, and casts a vote of nearly constant size whatever $r$ is, which is the property that distinguishes \eqref{eq:vote} from the nonlinear auto-correlation \eqref{eq:asym}.
+
+\paragraph{Context.}
+When 20\,\% of the pairs are reversed ($\rho=1/0.7$) among pairs with $\rho=0.7$, the reversed pairs still receive $\Delta m_i=+0.53$ on average and 92--96\,\% of them are assigned correctly, whereas the same ratio gives $-0.72$ when all pairs share it.
+The network thus corrects isolated reversed pairs from the displacement of their neighbours, i.e.\ it uses the pair context that brightness thresholding cannot (Section~\ref{sec:theory}).
+This correction is limited to isolated reversals: when a large fraction of pairs is reversed, as for $r\ge0.9$, the majority itself becomes uncertain, consistent with the measured direction errors following the ideal-vote prediction (Fig.~\ref{fig:theory}b).
+
+\paragraph{Margin.}
+The normalised margin \eqref{eq:margin} per window (Fig.~\ref{fig:unet}e) has a median of 0.14 for the nonlinear auto-correlation at $r=0.7$ and 0.04 at $r=0.9$, close to the values 0.18 and 0.05 predicted by $(1-r)/(1+r)$, and is negative in 2.2\,\% and 14\,\% of the windows. For the separated frames the median margin is 1 at both ratios (the $-\dd$ peak is absent), and it is negative in 0\,\% and 2.0\,\% of the windows.
+
+\FloatBarrier
+% ======================================================================
+\section{Discussion}
+
+\paragraph{What pulse coding can deliver.}
+The analysis separates two limits. Single-particle brightness is nearly uninformative ($\varepsilon_1\ge0.26$ for $r\ge0.5$), so the direction must come from pairs. Pair order is reliable only for $r\lesssim r^\ast=\exp[-w(1-w/2)/\sigma^2]$; for thin sheets or strong out-of-plane motion $r^\ast$ decreases, and the coding ratio should be chosen accordingly. Above $r^\ast$, Eq.~\eqref{eq:hoeffding} shows that the window still decides correctly if it contains enough effective pairs; the measured direction errors follow the ideal-vote prediction.
+
+\paragraph{Why separation helps beyond the sign.}
+Even when the sign is known, auto-correlation is less accurate (Table~\ref{tab:accuracy}) and fails when particle images overlap (LML). After separation, the correlation is a cross-correlation without self peak, and it can use window deformation, which a single double exposure does not allow.
+
+\paragraph{Fairness of the comparison.}
+All methods saw the same image, grid, pass schedule, masks, sub-pixel fit, validation and evaluation vectors, and both raw and validated results are given. Two asymmetries remain. First, the reference of the real recordings is a multi-pass cross-correlation, i.e.\ the same type of estimator as the proposed one applied to the true frames, which may favour cross-correlation-based results in regions where the reference itself is wrong (e.g.\ near the flare in case C). Second, the separation network is trained, and the auto-correlation baselines are not; we used the network fixed per domain and never tuned on the evaluation recordings.
+
+\paragraph{Limitations.}
+The double exposures of the real recordings are synthesised from double-frame images. A genuine pulse-coded recording would add effects that are not modelled: different background and flare in the two exposures, camera non-linearity and saturation of the brighter exposure, and pulse-to-pulse energy fluctuation (a random $r$). Only two real recordings were evaluated. The analysis assumes non-overlapping particle images and a locally uniform displacement, and the vote neglects random correlation peaks between different particles.
+
+% ======================================================================
+\section{Conclusion}
+Pulse coding makes the direction of a double-exposure PIV measurement identifiable, but under a Gaussian light sheet only through particle pairs, and only reliably for $r$ below a threshold set by the sheet thickness and the out-of-plane motion.
+Separating the double exposure into its two exposures with a U-Net and evaluating the separated frames with multi-pass cross-correlation turns the direction decision into an intensity-weighted vote of the pairs; the network reaches the error predicted for an ideal pair classifier.
+Compared with auto-correlation baselines under identical processing, the method gives the lowest outlier rate of the realisable methods in every tested case, the lowest median error, and for $r\le0.7$ results equal to or better than auto-correlation with the true sign; at $r=0.9$ the idealised baseline remains better on real recordings.
+The comparison also shows that matching the processing of the baselines changes the apparent gain severalfold, which should be considered in any evaluation of learned PIV components.
+
+\bibliographystyle{unsrtnat}
+\bibliography{refs}
+
+\end{document}
