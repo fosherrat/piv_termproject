@@ -194,7 +194,7 @@ def draw_map(ds, I, ref, valid, M, f_uod, f_pinn, f_pinn_raw, tag=""):
     for a in ax[:4]:
         a.imshow(img, cmap="gray", vmin=0, vmax=vmax, extent=(-0.5, x1 - x0 - 0.5, y1 - y0 - 0.5, -0.5))
     quiv(ax[0], ru, rv, np.zeros_like(valid))
-    ax[0].set_title("reference" + (" (true)" if ds == "synth" else " (real A, B)"), fontsize=10.5)
+    ax[0].set_title("reference" + (" (true)" if ds in ("synth", "lml") else " (real A, B)"), fontsize=10.5)
     short = {"mp+uod": "MP + UOD", "mp+uod+pinn": "+ PINN", "mp+pinn": "PINN, no UOD"}
     for a, (k, (u, v)) in zip(ax[1:4], [("mp+uod", f_uod), ("mp+uod+pinn", f_pinn), ("mp+pinn", f_pinn_raw)]):
         out = valid & (np.hypot(u - ru, v - rv) > 1)
