@@ -171,9 +171,11 @@ def dataset_thumbs():
            "lml": E.to_model_scale(np.load("data/lml/lml_samples.npz")["translation|0.7|0.01|0|I"])}
     A, B = R.normalize_pair(*(R.crop(R.preprocess(R.load(f))) for f in R.pairs()["test1"]))
     ims["test1"] = R.make_double(A, B, 0.7)
+    A, B = R.normalize_pair(*(R.crop(R.preprocess(R.load(f))) for f in R.pairs()["test2_3"]))
+    ims["test2"] = R.make_double(A, B, 0.7)
     fr, M = PC.load_case(); A, B = fr["bgsub"]; ims["caseC"] = np.where(M[:A.shape[0], :A.shape[1]], R.make_double(A, B, 0.7), 0)
     crops = {"synth": (slice(0, 256), slice(0, 256)), "lml": (slice(0, 256), slice(0, 256)),
-             "test1": (slice(0, 368), slice(0, 368)), "caseC": (slice(0, 512), slice(240, 752))}
+             "test1": (slice(0, 368), slice(0, 368)), "test2": (slice(None), slice(None)), "caseC": (slice(0, 512), slice(240, 752))}
     for k, im in ims.items():
         fig, a = plt.subplots(figsize=(3, 3))
         c = im[crops[k]]

@@ -23,7 +23,10 @@ import matplotlib.pyplot as plt
 COL = {"ours": "#257de0", "asym": "#f47230", "oracle": "#00b894", "gt": "#f2a600"}
 LAB = {"ours": "U-Net + CC (ours)", "asym": "nonlinear AC", "oracle": "AC, true sign$^\\dagger$",
        "gt": "true $A,B$ (upper bound)"}
-DS = [("synth", "Synthetic (ours)"), ("lml", "Synthetic (LML)"), ("test1", "Real: test1"), ("caseC", "Real: case C")]
+DS = [("synth", "Synthetic (ours)"), ("lml", "Synthetic (LML)"), ("test1", "Real: test1"),
+      ("test2", "Real: test2 (pairs 3–5)"), ("caseC", "Real: case C")]
+NDS = len(DS)
+FW = 1.8 * NDS        # figure width [in], 1.8 in per dataset panel
 R = [0.9, 0.7, 0.5]
 FLOOR = 5e-4      # zero rates are drawn at this level on log axes
 
@@ -69,7 +72,7 @@ def pct_axis(ax, lo=FLOOR, hi=1.0):
 
 
 def fig_outliers(d):
-    fig, ax = plt.subplots(2, 4, figsize=(7.2, 4.0), sharey=True, constrained_layout=True)
+    fig, ax = plt.subplots(2, NDS, figsize=(FW, 4.0), sharey=True, constrained_layout=True)
     for i, (suf, lab) in enumerate([("", "multi-pass"), ("+uod", "multi-pass + UOD")]):
         for j, (ds, name) in enumerate(DS):
             bars(ax[i, j], d, ds, "outlier", suf, ["asym", "oracle", "ours", "gt"], ci=True)
@@ -83,7 +86,7 @@ def fig_outliers(d):
 
 
 def fig_dir_acc(d):
-    fig, ax = plt.subplots(2, 4, figsize=(7.2, 4.0), constrained_layout=True)
+    fig, ax = plt.subplots(2, NDS, figsize=(FW, 4.0), constrained_layout=True)
     for j, (ds, name) in enumerate(DS):
         bars(ax[0, j], d, ds, "sign_err", "", ["asym", "ours"])
         pct_axis(ax[0, j]); ax[0, j].set_title(name, fontsize=8.5)
@@ -98,7 +101,7 @@ def fig_dir_acc(d):
 
 def fig_process(d, r=0.7):
     stages = [("_sp", "SP"), ("_sp+uod", "SP\n+UOD"), ("", "MP"), ("+uod", "MP\n+UOD")]
-    fig, ax = plt.subplots(1, 4, figsize=(7.2, 2.3), sharey=True, constrained_layout=True)
+    fig, ax = plt.subplots(1, NDS, figsize=(FW, 2.3), sharey=True, constrained_layout=True)
     for j, (ds, name) in enumerate(DS):
         t = d[f"{ds}/r{r}"]
         for m in ["asym", "oracle", "ours"]:
@@ -152,6 +155,13 @@ def examples(r=0.7):
     cx, cy, ru, rv = multipass_piv(A, B)
     out["test1"] = [run("test1", R.make_double(A, B, r), (cx, cy, ru, rv),
                         ~uod_median(ru, rv)[2] & (np.hypot(ru, rv) > 2))]
+    S = []
+    for k in EP.TEST2_EVAL:
+        A, B = R.normalize_pair(*(R.crop(R.preprocess(R.load(f))) for f in R.pairs()[k]))
+        cx, cy, ru, rv = multipass_piv(A, B)
+        S.append(run("test2", R.make_double(A, B, r), (cx, cy, ru, rv),
+                     ~uod_median(ru, rv)[2] & (np.hypot(ru, rv) > 2)))
+    out["test2"] = S
     if os.path.isdir("data/pivchallenge_C"):
         import evaluate_pivc as PC
         frames, M = PC.load_case(); A, B = frames["bgsub"]
@@ -193,7 +203,7 @@ def fig_vectors(ds, name, s, r=0.7):
 
 
 def fig_cdf(ex):
-    fig, ax = plt.subplots(1, 4, figsize=(7.2, 2.3), sharey=True, constrained_layout=True)
+    fig, ax = plt.subplots(1, NDS, figsize=(FW, 2.3), sharey=True, constrained_layout=True)
     e_grid = np.logspace(-2, 1.5, 300)
     for j, (ds, name) in enumerate(DS):
         if ds not in ex:

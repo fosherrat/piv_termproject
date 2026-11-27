@@ -25,9 +25,12 @@ Datasets
   synth : pivsep/synth.py, 12 images 256^2 per r (seeds 1000..1011, same as stage 1)
   lml   : LML generator (PGlml/DGlml/SIGlml), uniform translation, 12 images per r, ppp 0.01
   test1 : OpenPIV test1 (real), reference = multi-pass CC of the real frames
+  test2 : OpenPIV test2 (real, cylinder wake), pairs 3-5 pooled; pairs 0-2 were used for
+          fine-tuning, so this is a held-out-instant test of the fine-tuning set-up, not an
+          unseen recording.  Reference as test1
   caseC : PIV Challenge 2001 case C (real, background subtracted), reference as test1
 
-python scripts/evaluate_paper.py [--datasets synth lml test1 caseC]
+python scripts/evaluate_paper.py [--datasets synth lml test1 test2 caseC]
 """
 import argparse, json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -45,7 +48,9 @@ import evaluate_real as R
 
 WIN, STEP, MASK_R = 32, 16, 3
 MODELS = {"zeroshot": "results/sep_unet_wide_bce.pt", "finetuned": "results/sep_unet_ft_real.pt"}
-MAIN_MODEL = {"synth": "zeroshot", "lml": "zeroshot", "test1": "finetuned", "caseC": "finetuned"}
+MAIN_MODEL = {"synth": "zeroshot", "lml": "zeroshot", "test1": "finetuned", "test2": "finetuned",
+              "caseC": "finetuned"}
+TEST2_EVAL = ("test2_3", "test2_4", "test2_5")   # pairs 0-2 were used for fine-tuning
 
 
 def load_models():
@@ -135,7 +140,7 @@ def ds_lml(models, r, cache, n_img=12, ppp=0.01):
     return summarize(outs, n_img)
 
 
-def ds_real(models, r, A, B, inmask=None):
+def real_errors(models, r, A, B, inmask=None):
     cx, cy, ru, rv = multipass_piv(A, B)                     # reference: real separate frames
     _, _, bad = uod_median(ru, rv)
     valid = ~bad & (np.hypot(ru, rv) > 2)
@@ -143,12 +148,21 @@ def ds_real(models, r, A, B, inmask=None):
         valid &= inmask
     I = R.make_double(A, B, r)
     res = run_methods(models, I, (cx, cy, ru, rv))
-    return summarize([errors(res, ru, rv, valid)], 1)
+    return errors(res, ru, rv, valid)
+
+
+def ds_real(models, r, A, B, inmask=None):
+    return summarize([real_errors(models, r, A, B, inmask)], 1)
+
+
+def ds_real_multi(models, r, frames):
+    """Several pairs of one recording pooled (bootstrap over pairs)."""
+    return summarize([real_errors(models, r, A, B) for A, B in frames], len(frames))
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--datasets", nargs="+", default=["synth", "lml", "test1", "caseC"])
+    ap.add_argument("--datasets", nargs="+", default=["synth", "lml", "test1", "test2", "caseC"])
     ap.add_argument("--r", nargs="+", type=float, default=[0.9, 0.7, 0.5])
     ap.add_argument("--lml-cache", default="data/lml/lml_samples.npz")
     ap.add_argument("--out", default="results/eval_paper.json")
@@ -166,6 +180,9 @@ def main():
         if ds == "test1":
             P = R.pairs()["test1"]
             A, B = R.normalize_pair(*(R.crop(R.preprocess(R.load(f))) for f in P))
+        if ds == "test2":
+            P = R.pairs()
+            frames2 = [R.normalize_pair(*(R.crop(R.preprocess(R.load(f))) for f in P[k])) for k in TEST2_EVAL]
         if ds == "caseC":
             if not os.path.isdir("data/pivchallenge_C"):
                 print("caseC: data/pivchallenge_C not found, skipped", flush=True)
@@ -183,6 +200,8 @@ def main():
                 t = ds_lml(models, r, a.lml_cache)
             elif ds == "test1":
                 t = ds_real(models, r, A, B)
+            elif ds == "test2":
+                t = ds_real_multi(models, r, frames2)
             else:
                 t = ds_real(models, r, A, B, inm)
             out[f"{ds}/r{r}"] = t

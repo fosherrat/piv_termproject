@@ -10,7 +10,7 @@ python scripts/make_tables_paper.py [--in results/eval_paper.json] [--out paper/
 import argparse, json, os
 
 DS = [("synth", "Synthetic (ours)"), ("lml", "Synthetic (LML)"), ("test1", "Real: test1"),
-      ("caseC", "Real: case C")]
+      ("test2", "Real: test2$^\\S$"), ("caseC", "Real: case C")]
 R = [0.9, 0.7, 0.5]
 
 
@@ -33,8 +33,8 @@ def tab_main(d):
          r"same image and use the same multi-pass schedule (64$\to$32$\to$32\,px, 50\,\% overlap), centre mask "
          r"and sub-pixel fit; left: no post-processing, right: the same UOD + median replacement for every "
          r"method. Bold: best non-idealised method. $^\dagger$Direction supplied by the reference (idealised). "
-         r"$^\ddagger$True separate frames (upper bound, synthetic only). Brackets: 95\,\% bootstrap interval "
-         r"over images.}",
+         r"$^\ddagger$True separate frames (upper bound, synthetic only). $^\S$Pairs 3--5; pairs 0--2 of the same "
+         r"recording were used for fine-tuning. Brackets: 95\,\% bootstrap interval over images (pairs for test2).}",
          r"\label{tab:main}", r"\small", r"\resizebox{\textwidth}{!}{%", r"\begin{tabular}{llccccccc}", r"\toprule",
          r" & & \multicolumn{3}{c}{Multi-pass} & \multicolumn{3}{c}{Multi-pass + UOD} & \\",
          r"\cmidrule(lr){3-5}\cmidrule(lr){6-8}",
