@@ -138,30 +138,30 @@ def fig_outlier(d, suffix, name, ylabel):
     save(fig, name)
 
 
-def fig_direction(d):
+def fig_direction(d, suffix=""):
     h = 2.9
     fig, ax = panels(h)
     for a, (ds, title) in zip(ax, DS):
-        bar_group(a, d, ds, "sign_err", "", ["asym", "ours"])
+        bar_group(a, d, ds, "sign_err", suffix, ["asym", "ours"])
         pct_axis(a); a.set_title(title)
     ax[0].set_ylabel("direction-error rate")
     legend(fig, ["asym", "ours"], h)
     r_label(fig)
-    save(fig, "res_direction.png")
+    save(fig, "res_direction" + ("_uod" if suffix else "") + ".png")
 
 
-def fig_median(d):
+def fig_median(d, suffix=""):
     h = 2.9
     fig, ax = panels(h, sharey=False)
     for a, (ds, title) in zip(ax, DS):
         top = 0.4 if ds == "synth" else 2.0
         a.set_ylim(0, top)
-        bar_group(a, d, ds, "median", "", ["asym", "oracle", "ours", "gt"], log=False, clip=top)
+        bar_group(a, d, ds, "median", suffix, ["asym", "oracle", "ours", "gt"], log=False, clip=top)
         a.grid(axis="y"); a.set_axisbelow(True); a.set_title(title)
     ax[0].set_ylabel("median error [px]")
     legend(fig, ["asym", "oracle", "ours", "gt"], h)
     r_label(fig)
-    save(fig, "res_median.png")
+    save(fig, "res_median" + ("_uod" if suffix else "") + ".png")
 
 
 def fig_process(d, r=0.7):
@@ -218,7 +218,7 @@ CROP = {"synth": (slice(None), slice(None)), "lml": (slice(None), slice(None)),
 ARROWS = 16                  # arrows across a panel
 
 
-def fig_vectors(ds, s):
+def fig_vectors(ds, s, uod=False):
     import matplotlib.colors as mc
     I, cx, cy, (ru, rv), valid = s["I"], s["cx"], s["cy"], s["ref"], s["valid"]
     ys, xs = CROP[ds]
@@ -253,11 +253,14 @@ def fig_vectors(ds, s):
     ax[0].set_title("reference" + (" (true)" if ds in ("synth", "lml") else " (real A, B)"))
     for a, m in zip(ax[1:], ["asym", "oracle", "ours"]):
         u, v = s["fields"][m]
+        if uod:
+            from pivsep.postproc import uod_median
+            u, v = uod_median(u, v)[:2]
         out = valid & (np.hypot(u - ru, v - rv) > 1)
         quiv(a, u, v, out)
         a.set_title(f"{LAB[m].replace(' (ours)', '')}: {100 * out.sum() / valid.sum():.1f}%",
                     color=COL[m] if m != "oracle" else "#008a6c")
-    save(fig, f"res_vec_{ds}.png")
+    save(fig, f"res_vec_{ds}" + ("_uod" if uod else "") + ".png")
 
 
 def fig_cdf(ex):
@@ -304,13 +307,21 @@ def fig_datasets():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--skip-recompute", action="store_true")
+    ap.add_argument("--vectors-uod-only", action="store_true", help="recompute only the MP + UOD vector maps")
     a = ap.parse_args()
     style()
     d = json.load(open("results/eval_paper.json"))
     fig_outlier(d, "", "res_outlier.png", "outlier rate (multi-pass)")
     fig_outlier(d, "+uod", "res_outlier_uod.png", "outlier rate (MP + UOD)")
     fig_direction(d); fig_median(d); fig_process(d); fig_model(d)
-    if not a.skip_recompute:
+    fig_direction(d, "+uod"); fig_median(d, "+uod")
+    if a.vectors_uod_only:
+        import make_figures_paper as MP
+        ex = MP.examples()
+        for ds, _ in DS:
+            if ds in ex:
+                fig_vectors(ds, ex[ds][0], uod=True)
+    elif not a.skip_recompute:
         fig_datasets()
         import make_figures_paper as MP
         import torch
@@ -318,6 +329,7 @@ def main():
         for ds, _ in DS:
             if ds in ex:
                 fig_vectors(ds, ex[ds][0])
+                fig_vectors(ds, ex[ds][0], uod=True)
         fig_cdf(ex)
     print("saved in", OUT)
 
